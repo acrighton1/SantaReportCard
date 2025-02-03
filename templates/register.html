@@ -1,0 +1,68 @@
+<!-- wp:group {"align":"wide","className":"registration-container"} -->
+<div class="wp-block-group registration-container">
+    
+  <!-- wp:heading {"level":2} -->
+  <h2>Parent Registration</h2>
+  <!-- /wp:heading -->
+
+  <!-- wp:html -->
+  <form id="registration-form" method="POST" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+    <input type="hidden" name="action" value="register_parent">
+    <input type="text" name="full_name" placeholder="Full Name" required>
+    <input type="email" name="email" placeholder="Email" required>
+    <input type="password" name="password" placeholder="Password" required>
+    <input type="password" name="confirm_password" placeholder="Re-enter Password" required>
+    <input type="text" name="referral_code" placeholder="Referral Code (Optional)">
+    
+    <select name="membership_type" required>
+        <option value="basic">Basic Membership</option>
+        <option value="premium">Premium Membership</option>
+    </select>
+    
+    <p>Total Cost: <span id="membership-cost">$10/month</span></p>
+    
+    <button type="submit">Register</button>
+</form>
+  <!-- /wp:html -->
+
+</div>
+<!-- /wp:group -->
+
+<!-- wp:style -->
+<style>
+.registration-container {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  margin: 50px auto;
+}
+
+h2 {
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: #444;
+}
+
+input, select, button {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+button {
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+</style>
+<!-- /wp:style -->

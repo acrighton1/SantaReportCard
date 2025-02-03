@@ -1,0 +1,132 @@
+/* Global Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f0f9f9;
+}
+
+/* Main Login Container */
+.login-container {
+    display: flex;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    width: 1000px;
+    max-width: 90%;
+    margin: 20px;
+}
+
+/* Image Section */
+.image-section {
+    flex: 1;
+    background-color: #40b3b3;
+    padding: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-section img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Login Section */
+.login-section {
+    flex: 1;
+    padding: 60px;
+    background: white;
+}
+
+h2 {
+    color: #2a2a2a;
+    margin-bottom: 30px;
+    font-size: 32px;
+    font-weight: 600;
+}
+
+/* Form Group */
+.form-group {
+    margin-bottom: 20px;
+}
+
+input {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #e1e1e1;
+    border-radius: 10px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+input:focus {
+    outline: none;
+    border-color: #40b3b3;
+}
+
+/* Submit Button */
+button {
+    width: 100%;
+    padding: 15px;
+    background: #40b3b3;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background: #368f8f;
+}
+
+/* Links */
+.links {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.links p {
+    margin: 10px 0;
+    color: #666;
+}
+
+.links a {
+    color: #40b3b3;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.links a:hover {
+    color: #368f8f;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .login-container {
+        flex-direction: column;
+    }
+
+    .image-section {
+        padding: 20px;
+    }
+
+    .login-section {
+        padding: 30px;
+    }
+}

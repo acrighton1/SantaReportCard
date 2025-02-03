@@ -1,0 +1,21 @@
+<!-- wp:group {"align":"wide","className":"thank-you-container"} -->
+<div class="wp-block-group thank-you-container">
+    
+    <!-- wp:heading {"level":2,"textAlign":"center"} -->
+    <h2 style="text-align:center;">Thank You for Registering!</h2>
+    <!-- /wp:heading -->
+
+    <!-- wp:paragraph {"align":"center"} -->
+    <p style="text-align:center;">You will be redirected to the login page shortly.</p>
+    <!-- /wp:paragraph -->
+
+</div>
+<!-- /wp:group -->
+
+<!-- wp:html -->
+<script>
+    setTimeout(function() {
+        window.location.href = "/login";
+    }, 5000); // Redirect after 5 seconds
+</script>
+<!-- /wp:html -->

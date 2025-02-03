@@ -1,0 +1,270 @@
+<!-- 
+ Check if user is logged in
+ if (!isset($_SESSION['user_id'])) {
+    wp_redirect(home_url('/login'));
+    exit; -->
+
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f1f5f9;
+        color: #333;
+    }
+
+    .dashboard {
+        display: flex;
+        min-height: 100vh;
+    }
+
+    .sidebar {
+        width: 250px;
+        background-color: #ffffff;
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+    }
+
+    .sidebar h2 {
+        font-size: 24px;
+        margin-bottom: 30px;
+        color: #1e293b;
+    }
+
+    .sidebar nav a {
+        display: flex;
+        align-items: center;
+        padding: 10px 15px;
+        color: #64748b;
+        text-decoration: none;
+        transition: background-color 0.3s;
+        border-radius: 5px;
+        margin-bottom: 5px;
+    }
+
+    .sidebar nav a:hover,
+    .sidebar nav a.active {
+        background-color: #f1f5f9;
+        color: #1e293b;
+    }
+
+    .sidebar nav a i {
+        margin-right: 10px;
+        font-size: 18px;
+    }
+
+    .main-content {
+        flex: 1;
+        padding: 20px;
+    }
+
+    header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        background-color: #ffffff;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+
+    header h1 {
+        font-size: 24px;
+        color: #1e293b;
+    }
+
+    .notification-icon {
+        font-size: 20px;
+        color: #64748b;
+        cursor: pointer;
+    }
+
+    .card {
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .card h2 {
+        font-size: 20px;
+        margin-bottom: 15px;
+        color: #1e293b;
+    }
+
+    .overview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+    }
+
+    .overview-item {
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .overview-item.blue {
+        background-color: #e0f2fe;
+    }
+
+    .overview-item.green {
+        background-color: #dcfce7;
+    }
+
+    .overview-item p:first-child {
+        font-size: 14px;
+        color: #0369a1;
+        margin-bottom: 5px;
+    }
+
+    .overview-item p:last-child {
+        font-size: 24px;
+        font-weight: bold;
+        color: #0c4a6e;
+    }
+
+    .button {
+        display: inline-block;
+        background-color: #3b82f6;
+        color: #ffffff;
+        padding: 10px 15px;
+        border-radius: 5px;
+        text-decoration: none;
+        transition: background-color 0.3s;
+    }
+
+    .button:hover {
+        background-color: #2563eb;
+    }
+
+    .button.outline {
+        background-color: transparent;
+        border: 1px solid #3b82f6;
+        color: #3b82f6;
+    }
+
+    .button.outline:hover {
+        background-color: #3b82f6;
+        color: #ffffff;
+    }
+
+    select {
+        width: 100%;
+        max-width: 200px;
+        padding: 10px;
+        border: 1px solid #d1d5db;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+
+    .report-card-display {
+        background-color: #f1f5f9;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+
+    .button-group {
+        display: flex;
+        gap: 10px;
+    }
+</style>
+</head>
+<!-- wp:group {"align":"full","className":"dashboard"} -->
+<div class="wp-block-group dashboard">
+
+    <!-- Sidebar -->
+    <!-- wp:group {"className":"sidebar"} -->
+    <div class="wp-block-group sidebar">
+        <!-- wp:heading {"level":2} -->
+        <h2>KidTrack</h2>
+        <!-- /wp:heading -->
+
+        <!-- wp:navigation {"overlayMenu":"never"} -->
+        <ul class="wp-block-navigation">
+            <li><a href="#" class="active">🏠 Home</a></li>
+            <li><a href="#">👥 Manage Kids</a></li>
+            <li><a href="#">📊 Report Cards</a></li>
+            <li><a href="#">⚙️ Membership</a></li>
+            <li><a href="#">🚪 Logout</a></li>
+        </ul>
+        <!-- /wp:navigation -->
+    </div>
+    <!-- /wp:group -->
+
+    <!-- Main Content -->
+    <!-- wp:group {"className":"main-content"} -->
+    <div class="wp-block-group main-content">
+
+        <!-- Header -->
+        <!-- wp:group {"className":"header"} -->
+        <div class="wp-block-group header">
+            <!-- wp:heading {"level":1} -->
+            <h1>Dashboard</h1>
+            <!-- /wp:heading -->
+            <div class="notification-icon">🔔</div>
+        </div>
+        <!-- /wp:group -->
+
+        <!-- Overview Section -->
+        <!-- wp:group {"className":"card"} -->
+        <div class="wp-block-group card">
+            <!-- wp:heading {"level":2} -->
+            <h2>Overview</h2>
+            <!-- /wp:heading -->
+            <!-- wp:shortcode -->
+            [dashboard_overview]
+            <!-- /wp:shortcode -->
+            <!-- Manage Kids Section -->
+            <!-- wp:group {"className":"card"} -->
+            <div class="wp-block-group card">
+                <!-- wp:heading {"level":2} -->
+                <h2>Manage Kids</h2>
+                <!-- /wp:heading -->
+                <p>Child management interface will be here.</p>
+            </div>
+            <!-- /wp:group -->
+
+            <!-- Report Cards Section -->
+            <!-- wp:group {"className":"card"} -->
+            <div class="wp-block-group card">
+                <!-- wp:heading {"level":2} -->
+                <h2>Report Cards</h2>
+                <!-- /wp:heading -->
+
+                <!-- wp:shortcode -->
+                [child_dropdown]
+                <!-- /wp:shortcode -->
+
+                <!-- wp:group {"className":"report-card-display"} -->
+                <div class="wp-block-group report-card-display">
+                    <p>Select a child to view their report card.</p>
+                </div>
+                <!-- /wp:group -->
+
+
+                <!-- wp:buttons {"className":"button-group"} -->
+                <div class="wp-block-buttons button-group">
+                    <div class="wp-block-button outline">
+                        <a class="wp-block-button__link" href="#">Edit Report Card</a>
+                    </div>
+                    <div class="wp-block-button">
+                        <a class="wp-block-button__link" href="#">Export as PDF</a>
+                    </div>
+                </div>
+                <!-- /wp:buttons -->
+            </div>
+            <!-- /wp:group -->
+
+        </div>
+        <!-- /wp:group -->
+
+    </div>
+    <!-- /wp:group -->
