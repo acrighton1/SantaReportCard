@@ -36,81 +36,12 @@ function twentytwentyfive_child_enqueue_scripts() {
 }
 add_action('wp_enqueue_scripts', 'twentytwentyfive_child_enqueue_scripts');
 
-// Handle parent login
-function handle_parent_login() {
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email']) && isset($_POST['password'])) {
-        $email = sanitize_email($_POST['email']);
-        $password = sanitize_text_field($_POST['password']);
-
-        global $wpdb;
-        $parent = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}parents WHERE email = %s",
-            $email
-        ));
-
-        if ($parent && wp_check_password($password, $parent->password_hash)) {
-            wp_redirect(home_url('/dashboard'));
-            exit;
-        } else {
-            wp_redirect(add_query_arg('login_error', '1', wp_get_referer()));
-            exit;
-        }
-    }
+// Start a session if not already started
+if (!session_id()) {
+    session_start();
 }
-add_action('init', 'handle_parent_login');
 
-
-// Handle parent registration
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
-    $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
-    $password = isset($_POST['password']) ? sanitize_text_field($_POST['password']) : '';
-    $full_name = isset($_POST['full_name']) ? sanitize_text_field($_POST['full_name']) : '';
-    $referral_code = isset($_POST['referral_code']) ? sanitize_text_field($_POST['referral_code']) : '';
-    $membership_type = isset($_POST['membership_type']) ? sanitize_text_field($_POST['membership_type']) : '';
-
-    if (!empty($email) && !empty($password) && !empty($full_name)) {
-        global $wpdb;
-        $inserted = $wpdb->insert(
-            "{$wpdb->prefix}parents",
-            [
-                'email' => $email,
-                'password_hash' => wp_hash_password($password),
-                'full_name' => $full_name,
-                'referral_code' => $referral_code,
-                'membership_type' => $membership_type,
-                'created_at' => current_time('mysql')
-            ]
-        );
-    // Redirect to Thank You page
-    wp_redirect((site_url('/thank-you')));
-    exit;
-}
-    }
-
-// Handle child registration
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
-    $full_name = isset($_POST['full_name']) ? sanitize_text_field($_POST['full_name']) : '';
-    $parent_id = isset($_POST['parent_id']) ? intval($_POST['parent_id']) : '';
-
-    if (!empty($full_name) && !empty($parent_id)) {
-        global $wpdb;
-        $inserted = $wpdb->insert(
-            "{$wpdb->prefix}kids",
-            [
-                'full_name' => $full_name,
-                'parent_id' => $parent_id,
-                'created_at' => current_time('mysql')
-            ]
-        );
-    // Redirect to Thank You page
-    wp_redirect((site_url('/thank-you')));
-    exit;
-}
-    }
-
-
-
-//Create Database Tables
+// Create Database Tables
 function santa_report_create_tables() {
     global $wpdb;
     $charset_collate = $wpdb->get_charset_collate();
@@ -172,40 +103,195 @@ function santa_report_create_tables() {
 // Run on theme activation
 add_action('after_switch_theme', 'santa_report_create_tables');
 
+// Handle parent login
+function handle_parent_login() {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email']) && isset($_POST['password'])) {
+        $email = sanitize_email($_POST['email']);
+        $password = sanitize_text_field($_POST['password']);
 
-//Dynamically Update Dashboard
+        global $wpdb;
+        $parent = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}parents WHERE email = %s",
+            $email
+        ));
 
+        if ($parent && wp_check_password($password, $parent->password_hash)) {
+            // Store the parent's email in the session
+            $_SESSION['parent_email'] = $parent->email;
+            wp_redirect(home_url('/dashboard'));
+            exit;
+        } else {
+            wp_redirect(add_query_arg('login_error', '1', wp_get_referer()));
+            exit;
+        }
+    }
+}
+add_action('init', 'handle_parent_login');
+
+// Handle parent logout
+function handle_parent_logout() {
+    if (isset($_GET['action']) && $_GET['action'] === 'logout') {
+        // Clear the session
+        session_unset();
+        session_destroy();
+        wp_redirect(home_url('/login'));
+        exit;
+    }
+}
+add_action('init', 'handle_parent_logout');
+
+// Handle parent registration
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
+    $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
+    $password = isset($_POST['password']) ? sanitize_text_field($_POST['password']) : '';
+    $full_name = isset($_POST['full_name']) ? sanitize_text_field($_POST['full_name']) : '';
+    $referral_code = isset($_POST['referral_code']) ? sanitize_text_field($_POST['referral_code']) : '';
+    $membership_type = isset($_POST['membership_type']) ? sanitize_text_field($_POST['membership_type']) : '';
+
+    if (!empty($email) && !empty($password) && !empty($full_name)) {
+        global $wpdb;
+        $inserted = $wpdb->insert(
+            "{$wpdb->prefix}parents",
+            [
+                'email' => $email,
+                'password_hash' => wp_hash_password($password),
+                'full_name' => $full_name,
+                'referral_code' => $referral_code,
+                'membership_type' => $membership_type,
+                'created_at' => current_time('mysql')
+            ]
+        );
+
+        // Redirect to Thank You page
+        wp_redirect(site_url('/thank-you'));
+        exit;
+    }
+}
+
+// Handle child registration
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
+    $full_name = isset($_POST['full_name']) ? sanitize_text_field($_POST['full_name']) : '';
+    $parent_id = isset($_POST['parent_id']) ? intval($_POST['parent_id']) : '';
+
+    if (!empty($full_name) && !empty($parent_id)) {
+        global $wpdb;
+        $inserted = $wpdb->insert(
+            "{$wpdb->prefix}kids",
+            [
+                'kid_id' => null, // Auto-incremented
+                'parent_id' => $parent_id,
+                'full_name' => $full_name,
+                'created_at' => current_time('mysql')
+            ]
+        );
+        // Redirect to Thank You page
+        wp_redirect(site_url('/thank-you'));
+        exit;
+    }
+}
+
+// Dynamically Update Dashboard
 function get_dashboard_overview() {
-    if (!is_user_logged_in()) {
+    // Check if the parent is logged in
+    if (!isset($_SESSION['parent_email'])) {
         return '<p>You must be logged in to access the dashboard.</p>';
     }
 
     global $wpdb;
-    $user_id = get_current_user_id();
-    $membership = $wpdb->get_var("SELECT membership_type FROM {$wpdb->prefix}memberships WHERE user_id = $user_id");
-    $kid_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}kids WHERE parent_id = $user_id");
+    $parent_email = $_SESSION['parent_email'];
 
-    ob_start(); ?>
-    <div class="wp-block-columns overview-grid">
-        <div class="wp-block-column overview-item blue">
-            <p>Membership Status</p>
-            <p><?php echo esc_html(ucfirst($membership) ?: 'Basic'); ?></p>
-        </div>
-        <div class="wp-block-column overview-item green">
-            <p>Number of Kids</p>
-            <p><?php echo esc_html($kid_count); ?></p>
-        </div>
-        <div class="wp-block-column">
-            <div class="wp-block-button">
-                <a class="wp-block-button__link" href="#">Generate Report Card</a>
-            </div>
-        </div>
-    </div>
-    <?php return ob_get_clean();
+    // Fetch the parent's data from the wp_parents table
+    $parent = $wpdb->get_row($wpdb->prepare(
+        "SELECT * FROM {$wpdb->prefix}parents WHERE email = %s",
+        $parent_email
+    ));
+
+    if (!$parent) {
+        return '<p>No parent data found.</p>';
+    }
+
+    // Fetch membership type (use prepared statement to prevent SQL injection)
+    $membership = $wpdb->get_var($wpdb->prepare(
+        "SELECT membership_type FROM {$wpdb->prefix}memberships WHERE user_id = %d",
+        $parent->user_id
+    ));
+
+    // Fallback to 'Basic' if no membership is found
+    if (empty($membership)) {
+        $membership = 'basic';
+    }
+
+    // Fetch the number of kids (use prepared statement to prevent SQL injection)
+    $kid_count = $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM {$wpdb->prefix}kids WHERE parent_id = %d",
+        $parent->user_id
+    ));
+
+    // Build the HTML output
+    $output = '<div class="wp-block-columns overview-grid">';
+    $output .= '<div class="wp-block-column overview-item blue">';
+    $output .= '<p>Membership Status</p>';
+    $output .= '<p>' . esc_html(ucfirst($membership)) . '</p>';
+    $output .= '</div>';
+    $output .= '<div class="wp-block-column overview-item red">';
+    $output .= '<p>Parent Email</p>';
+    $output .= '<p>' . esc_html($parent->email) . '</p>';
+    $output .= '</div>';
+    $output .= '<div class="wp-block-column overview-item green">';
+    $output .= '<p>Number of Kids</p>';
+    $output .= '<p>' . esc_html($kid_count) . '</p>';
+    $output .= '</div>';
+    $output .= '<div class="wp-block-column">';
+    $output .= '<div class="wp-block-button">';
+    $output .= '<a class="wp-block-button__link" href="#">Generate Report Card</a>';
+    $output .= '</div>';
+    $output .= '</div>';
+    $output .= '</div>';
+
+    return $output;
 }
-add_filter('the_content', 'do_shortcode');
 add_shortcode('dashboard_overview', 'get_dashboard_overview');
 
+function src_get_registered_parents() {
+    global $wpdb;
+    $table_name = "{$wpdb->prefix}parents";
+
+    // Check if the parent is logged in
+    if (!isset($_SESSION['parent_email'])) {
+        return '<p>You must be logged in to view this data.</p>';
+    }
+
+    $parent_email = $_SESSION['parent_email'];
+
+    // Fetch data for the current parent only, based on their email
+    $results = $wpdb->get_results($wpdb->prepare(
+        "SELECT * FROM $table_name WHERE email = %s ORDER BY created_at DESC",
+        $parent_email
+    ), ARRAY_A);
+
+    if (!$results) {
+        return '<p>No registered parents yet.</p>';
+    }
+
+    $output = '<table class="wp-list-table widefat fixed striped">';
+    $output .= '<thead><tr><th>Email</th><th>Full Name</th><th>Membership</th><th>Registered On</th></tr></thead><tbody>';
+
+    foreach ($results as $row) {
+        $output .= "<tr>
+            <td>{$row['email']}</td>
+            <td>{$row['full_name']}</td>
+            <td>{$row['membership_type']}</td>
+            <td>{$row['created_at']}</td>
+        </tr>";
+    }
+
+    $output .= '</tbody></table>';
+
+    return $output;
+}
+
+// Register as a shortcode to display in Gutenberg or a page
+add_shortcode('src_registered_parents', 'src_get_registered_parents');
 
 //Dynamically fetch Children in Drop down and Associated Report Card
 
