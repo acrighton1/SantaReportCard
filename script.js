@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", (event) => {
+document.addEventListener("DOMContentLoaded", () => {
     // Smooth scrolling for anchor links
     document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
       anchor.addEventListener("click", function (e) {
@@ -19,20 +19,20 @@ document.addEventListener("DOMContentLoaded", (event) => {
     })
   
     // FAQ accordion functionality
-    const faqItems = document.querySelectorAll(".faq-item")
-    faqItems.forEach((item) => {
-      const question = item.querySelector("h3")
-      const answer = item.querySelector("p")
+//     const faqItems = document.querySelectorAll(".faq-item")
+//     faqItems.forEach((item) => {
+//       const question = item.querySelector("h3")
+//       const answer = item.querySelector("p")
   
-      question.addEventListener("click", () => {
-        answer.style.display = answer.style.display === "none" ? "block" : "none"
-      })
-    })
-  })
+//       question.addEventListener("click", () => {
+//         answer.style.display = answer.style.display === "none" ? "block" : "none"
+//       })
+//     })
+//   })
   
-  document.getElementById("hamburger").addEventListener("click", function () {
-    document.getElementById("nav-links").classList.toggle("show");
-});
+//   document.getElementById("hamburger").addEventListener("click", function () {
+//     document.getElementById("nav-links").classList.toggle("show");
+// });
   
 //Child Dropdown Select for Report Card
 jQuery(document).ready(function($) {
@@ -57,6 +57,7 @@ jQuery(document).ready(function($) {
                   $('.report-card-display').html('<p>No report card available.</p>');
               }
           }
+        });
       });
   });
 });

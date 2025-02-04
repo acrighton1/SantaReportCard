@@ -6,23 +6,25 @@
   <!-- /wp:heading -->
 
   <!-- wp:html -->
-  <form id="registration-form" method="POST" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-    <input type="hidden" name="action" value="register_parent">
-    <input type="text" name="full_name" placeholder="Full Name" required>
-    <input type="email" name="email" placeholder="Email" required>
-    <input type="password" name="password" placeholder="Password" required>
-    <input type="password" name="confirm_password" placeholder="Re-enter Password" required>
-    <input type="text" name="referral_code" placeholder="Referral Code (Optional)">
-    
-    <select name="membership_type" required>
-        <option value="basic">Basic Membership</option>
-        <option value="premium">Premium Membership</option>
-    </select>
-    
-    <p>Total Cost: <span id="membership-cost">$10/month</span></p>
-    
-    <button type="submit">Register</button>
-</form>
+    <form id="registration-form" method="POST">
+        <input type="text" name="full_name" placeholder="Full Name" required>
+        <input type="email" name="email" placeholder="Email" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <input type="password" name="confirm_password" placeholder="Re-enter Password" required>
+        <input type="text" name="referral_code" placeholder="Referral Code (Optional)">
+        <select name="membership_type" required>
+            <option value="basic">Basic Membership</option>
+            <option value="premium">Premium Membership</option>
+        </select>
+        <p>Total Cost: <span id="membership-cost">$10/month</span></p>
+        <button type="submit">Register</button>
+    </form>
+    <!-- Thank You Modal -->
+    <div id="thankYouModal" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px; background: white; border: 2px solid black; z-index: 9999;">
+      <p>Thank you for registering!</p>
+      <button onclick="closeModal()">Close</button>
+  </div>
+
   <!-- /wp:html -->
 
 </div>
