@@ -59,6 +59,8 @@ function handle_parent_login() {
 }
 add_action('init', 'handle_parent_login');
 
+
+// Handle parent registration
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
     $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
     $password = isset($_POST['password']) ? sanitize_text_field($_POST['password']) : '';
@@ -85,63 +87,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
 }
     }
 
+// Handle child registration
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
+    $full_name = isset($_POST['full_name']) ? sanitize_text_field($_POST['full_name']) : '';
+    $parent_id = isset($_POST['parent_id']) ? intval($_POST['parent_id']) : '';
+
+    if (!empty($full_name) && !empty($parent_id)) {
+        global $wpdb;
+        $inserted = $wpdb->insert(
+            "{$wpdb->prefix}kids",
+            [
+                'full_name' => $full_name,
+                'parent_id' => $parent_id,
+                'created_at' => current_time('mysql')
+            ]
+        );
+    // Redirect to Thank You page
+    wp_redirect((site_url('/thank-you')));
+    exit;
+}
+    }
 
 
-// function handle_parent_registration() {
-//     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
-//         global $wpdb;
-
-//         // Sanitize input
-//         $email = sanitize_email($_POST['email']);
-//         $password = sanitize_text_field($_POST['password']);
-//         $confirm_password = sanitize_text_field($_POST['confirm_password']);
-//         $full_name = sanitize_text_field($_POST['full_name']);
-//         $referral_code = sanitize_text_field($_POST['referral_code']);
-//         $membership_type = sanitize_text_field($_POST['membership_type']);
-
-//         // Password validation
-//         if ($password !== $confirm_password) {
-//             wp_redirect(add_query_arg('error', 'password_mismatch', wp_get_referer()));
-//             exit;
-//         }
-
-//         // Check if email already exists
-//         $existing_parent = $wpdb->get_var($wpdb->prepare(
-//             "SELECT COUNT(*) FROM {$wpdb->prefix}parents WHERE email = %s",
-//             $email
-//         ));
-
-//         if ($existing_parent > 0) {
-//             wp_redirect(add_query_arg('error', 'email_exists', wp_get_referer()));
-//             exit;
-//         }
-
-//         // Insert into wp_parents table
-//         global $wpdb;
-//         $wpdb->insert(
-//             "{$wpdb->prefix}parents",
-//             [
-//                 'full_name' => $full_name,
-//                 'email' => $email,
-//                 'password_hash' => wp_hash_password($password),
-//                 'referral_code' => $referral_code,
-//                 'membership_type' => $membership_type ?? 'basic',
-//                 'stripe_customer_id' => '', // Placeholder for Stripe integration
-//                 'created_at' => current_time('mysql')
-//             ]
-//         );
-        
-
-//         // Redirect to Thank You page
-//         wp_redirect(home_url('/thank-you'));
-//         exit;
-//     }
-// }
-
-
-// Hook into WordPress for form processing
-// add_action('admin_post_nopriv_register_parent', 'handle_parent_registration');
-// add_action('admin_post_register_parent', 'handle_parent_registration');
 
 //Create Database Tables
 function santa_report_create_tables() {
