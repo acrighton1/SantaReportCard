@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Twenty Twenty-Five Child Theme functions and definitions
  *
@@ -6,13 +7,14 @@
  */
 
 // Enqueue parent and child theme styles
-function twentytwentyfive_child_enqueue_styles() {
+function twentytwentyfive_child_enqueue_styles()
+{
     // Enqueue parent theme styles
     wp_enqueue_style('parent-style', get_template_directory_uri() . '/style.css');
 
     // Enqueue child theme styles
     wp_enqueue_style('child-style', get_stylesheet_directory_uri() . '/style.css', array('parent-style'));
-    
+
     // Enqueue login.css on the login page only
     if (is_page('login')) { // Adjust 'login' to your specific login page slug if necessary
         wp_enqueue_style('login-style', get_stylesheet_directory_uri() . '/assets/login.css', array('parent-style'));
@@ -24,7 +26,8 @@ function twentytwentyfive_child_enqueue_styles() {
 add_action('wp_enqueue_scripts', 'twentytwentyfive_child_enqueue_styles');
 
 // Enqueue additional external scripts and styles
-function twentytwentyfive_child_enqueue_scripts() {
+function twentytwentyfive_child_enqueue_scripts()
+{
     // Enqueue Font Awesome
     wp_enqueue_style('font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css');
 
@@ -42,58 +45,65 @@ if (!session_id()) {
 }
 
 // Create Database Tables
-function santa_report_create_tables() {
+function santa_report_create_tables()
+{
     global $wpdb;
     $charset_collate = $wpdb->get_charset_collate();
 
     $sql = "
     CREATE TABLE IF NOT EXISTS {$wpdb->prefix}parents (
-        user_id INT AUTO_INCREMENT PRIMARY KEY,
-        full_name VARCHAR(100) NOT NULL,
-        email VARCHAR(100) UNIQUE NOT NULL,
-        password_hash VARCHAR(255) NOT NULL,
-        referral_code VARCHAR(50),
-        membership_type ENUM('basic', 'premium') DEFAULT 'basic',
-        stripe_customer_id VARCHAR(100),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) $charset_collate;
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    referral_code VARCHAR(50),
+    membership_type ENUM('basic', 'premium') DEFAULT 'basic',
+    stripe_customer_id VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) $charset_collate;
 
-    CREATE TABLE IF NOT EXISTS {$wpdb->prefix}kids (
-        kid_id INT AUTO_INCREMENT PRIMARY KEY,
-        parent_id INT NOT NULL,
-        full_name VARCHAR(100) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (parent_id) REFERENCES {$wpdb->prefix}parents(user_id) ON DELETE CASCADE
-    ) $charset_collate;
+CREATE TABLE IF NOT EXISTS {$wpdb->prefix}kids (
+    kid_id INT AUTO_INCREMENT PRIMARY KEY,
+    parent_id INT NOT NULL,
+    full_name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (parent_id) REFERENCES {$wpdb->prefix}parents(user_id) ON DELETE CASCADE
+) $charset_collate;
 
-    CREATE TABLE IF NOT EXISTS {$wpdb->prefix}criteria (
-        criteria_id INT AUTO_INCREMENT PRIMARY KEY,
-        criteria_name VARCHAR(100) NOT NULL,
-        description TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) $charset_collate;
+CREATE TABLE IF NOT EXISTS {$wpdb->prefix}grading_criteria (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    kid_id INT NOT NULL,
+    criteria_1 VARCHAR(100) NOT NULL,
+    criteria_2 VARCHAR(100) NOT NULL,
+    criteria_3 VARCHAR(100) NOT NULL,
+    criteria_4 VARCHAR(100) NOT NULL,
+    criteria_5 VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (kid_id) REFERENCES {$wpdb->prefix}kids(kid_id) ON DELETE CASCADE
+) $charset_collate;
 
-    CREATE TABLE IF NOT EXISTS {$wpdb->prefix}report_cards (
-        report_id INT AUTO_INCREMENT PRIMARY KEY,
-        kid_id INT NOT NULL,
-        month_year DATE NOT NULL,
-        criteria_id INT NOT NULL,
-        grade ENUM('red', 'yellow', 'green') NOT NULL,
-        comments TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (kid_id) REFERENCES {$wpdb->prefix}kids(kid_id) ON DELETE CASCADE,
-        FOREIGN KEY (criteria_id) REFERENCES {$wpdb->prefix}criteria(criteria_id) ON DELETE CASCADE
-    ) $charset_collate;
+CREATE TABLE IF NOT EXISTS {$wpdb->prefix}report_cards (
+    report_id INT AUTO_INCREMENT PRIMARY KEY,
+    kid_id INT NOT NULL,
+    month_year DATE NOT NULL,
+    criteria_id INT NOT NULL,
+    grade ENUM('red', 'yellow', 'green') NOT NULL,
+    comments TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (kid_id) REFERENCES {$wpdb->prefix}kids(kid_id) ON DELETE CASCADE,
+    FOREIGN KEY (criteria_id) REFERENCES {$wpdb->prefix}criteria(criteria_id) ON DELETE CASCADE
+) $charset_collate;
 
-    CREATE TABLE IF NOT EXISTS {$wpdb->prefix}memberships (
-        membership_id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
-        membership_type ENUM('basic', 'premium') DEFAULT 'basic',
-        stripe_subscription_id VARCHAR(100),
-        status ENUM('active', 'inactive', 'canceled') DEFAULT 'active',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES {$wpdb->prefix}parents(user_id) ON DELETE CASCADE
-    ) $charset_collate;
+CREATE TABLE IF NOT EXISTS {$wpdb->prefix}memberships (
+    membership_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    membership_type ENUM('basic', 'premium') DEFAULT 'basic',
+    stripe_subscription_id VARCHAR(100),
+    status ENUM('active', 'inactive', 'canceled') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES {$wpdb->prefix}parents(user_id) ON DELETE CASCADE
+) $charset_collate;
+
     ";
 
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -104,7 +114,8 @@ function santa_report_create_tables() {
 add_action('after_switch_theme', 'santa_report_create_tables');
 
 // Handle parent login
-function handle_parent_login() {
+function handle_parent_login()
+{
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email']) && isset($_POST['password'])) {
         $email = sanitize_email($_POST['email']);
         $password = sanitize_text_field($_POST['password']);
@@ -129,7 +140,8 @@ function handle_parent_login() {
 add_action('init', 'handle_parent_login');
 
 // Handle parent logout
-function handle_parent_logout() {
+function handle_parent_logout()
+{
     if (isset($_GET['action']) && $_GET['action'] === 'logout') {
         // Clear the session
         session_unset();
@@ -168,30 +180,132 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
     }
 }
 
+
 // Handle child registration
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
-    $full_name = isset($_POST['full_name']) ? sanitize_text_field($_POST['full_name']) : '';
-    $parent_id = isset($_POST['parent_id']) ? intval($_POST['parent_id']) : '';
+    global $wpdb;
 
-    if (!empty($full_name) && !empty($parent_id)) {
-        global $wpdb;
-        $inserted = $wpdb->insert(
+    $full_name = isset($_POST['full_name']) ? sanitize_text_field($_POST['full_name']) : '';
+    $parent_email = $_SESSION['parent_email'];
+
+    // Fetch parent ID from the database
+    $parent = $wpdb->get_row($wpdb->prepare(
+        "SELECT user_id FROM {$wpdb->prefix}parents WHERE email = %s",
+        $parent_email
+    ));
+
+    if ($parent && !empty($full_name)) {
+        // Insert child into kids table
+        $wpdb->insert(
             "{$wpdb->prefix}kids",
             [
-                'kid_id' => null, // Auto-incremented
-                'parent_id' => $parent_id,
+                'parent_id' => $parent->user_id,
                 'full_name' => $full_name,
                 'created_at' => current_time('mysql')
             ]
         );
+        $kid_id = $wpdb->insert_id;
+
+        // Insert grading criteria
+        $wpdb->insert(
+            "{$wpdb->prefix}grading_criteria",
+            [
+                'kid_id' => $kid_id,
+                'criteria_1' => sanitize_text_field($_POST['criteria_1']),
+                'criteria_2' => sanitize_text_field($_POST['criteria_2']),
+                'criteria_3' => sanitize_text_field($_POST['criteria_3']),
+                'criteria_4' => sanitize_text_field($_POST['criteria_4']),
+                'criteria_5' => sanitize_text_field($_POST['criteria_5']),
+                'created_at' => current_time('mysql')
+            ]
+        );
+
         // Redirect to Thank You page
         wp_redirect(site_url('/thank-you'));
         exit;
     }
 }
 
+
+
+function src_child_registration_form() {
+    if (!isset($_SESSION['parent_email'])) {
+        return '<p>You must be logged in to register a child.</p>';
+    }
+
+    ob_start(); ?>
+    <form id="child-registration-form" method="POST" class="wp-block-group child-form">
+        <div class="wp-block-columns">
+            <div class="wp-block-column">
+                <label for="full_name">Child's Full Name</label>
+                <input type="text" name="full_name" id="full_name" required placeholder="Enter child's name">
+            </div>
+        </div>
+
+        <h4>Grading Criteria</h4>
+
+        <?php for ($i = 1; $i <= 5; $i++) : ?>
+            <div class="wp-block-columns">
+                <div class="wp-block-column">
+                    <label for="criteria_<?php echo $i; ?>">Criteria <?php echo $i; ?></label>
+                    <input type="text" name="criteria_<?php echo $i; ?>" id="criteria_<?php echo $i; ?>" required placeholder="Enter criteria">
+                </div>
+            </div>
+        <?php endfor; ?>
+
+        <div class="wp-block-columns">
+            <div class="wp-block-column">
+                <button type="submit" class="wp-block-button__link">Register Child</button>
+            </div>
+        </div>
+    </form>
+
+    <style>
+        .child-form {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            margin: 20px auto;
+        }
+        .child-form label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .child-form input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .child-form button {
+            background: #0073aa;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+            transition: 0.3s;
+        }
+        .child-form button:hover {
+            background: #005a87;
+        }
+    </style>
+
+    <?php return ob_get_clean();
+}
+add_shortcode('child_registration_form', 'src_child_registration_form');
+
+
 // Dynamically Update Dashboard
-function get_dashboard_overview() {
+function get_dashboard_overview()
+{
     // Check if the parent is logged in
     if (!isset($_SESSION['parent_email'])) {
         return '<p>You must be logged in to access the dashboard.</p>';
@@ -252,7 +366,8 @@ function get_dashboard_overview() {
 }
 add_shortcode('dashboard_overview', 'get_dashboard_overview');
 
-function src_get_registered_parents() {
+function src_get_registered_parents()
+{
     global $wpdb;
     $table_name = "{$wpdb->prefix}parents";
 
@@ -294,15 +409,30 @@ function src_get_registered_parents() {
 add_shortcode('src_registered_parents', 'src_get_registered_parents');
 
 //Dynamically fetch Children in Drop down and Associated Report Card
-
-function get_child_dropdown() {
-    if (!is_user_logged_in()) {
+function get_child_dropdown()
+{
+    if (!isset($_SESSION['parent_email'])) {
         return '<p>Please log in to manage your kids.</p>';
     }
 
     global $wpdb;
-    $user_id = get_current_user_id();
-    $kids = $wpdb->get_results("SELECT kid_id, full_name FROM {$wpdb->prefix}kids WHERE parent_id = $user_id");
+    $parent_email = $_SESSION['parent_email'];
+
+    // Fetch parent_id
+    $parent = $wpdb->get_row($wpdb->prepare(
+        "SELECT user_id FROM {$wpdb->prefix}parents WHERE email = %s",
+        $parent_email
+    ));
+
+    if (!$parent) {
+        return '<p>Parent not found.</p>';
+    }
+
+    // Fetch children associated with this parent
+    $kids = $wpdb->get_results($wpdb->prepare(
+        "SELECT kid_id, full_name FROM {$wpdb->prefix}kids WHERE parent_id = %d",
+        $parent->user_id
+    ));
 
     if (!$kids) {
         return '<p>No children found. <a href="#">Add a child</a></p>';
@@ -321,7 +451,9 @@ function get_child_dropdown() {
 }
 add_shortcode('child_dropdown', 'get_child_dropdown');
 
-function get_report_card_callback() {
+
+function get_report_card_callback()
+{
     if (!is_user_logged_in() || empty($_POST['kid_id'])) {
         wp_send_json_error('Unauthorized or missing child ID.');
     }
@@ -332,8 +464,8 @@ function get_report_card_callback() {
         "SELECT r.grade, r.comments, c.criteria_name 
          FROM {$wpdb->prefix}report_cards r
          JOIN {$wpdb->prefix}criteria c ON r.criteria_id = c.criteria_id
-         WHERE r.kid_id = %d", 
-         $kid_id
+         WHERE r.kid_id = %d",
+        $kid_id
     ));
 
     if (!$reports) {
@@ -343,21 +475,22 @@ function get_report_card_callback() {
     ob_start();
     foreach ($reports as $report) : ?>
         <div class="report-card-entry">
-            <p><strong><?php echo esc_html($report->criteria_name); ?>:</strong> 
+            <p><strong><?php echo esc_html($report->criteria_name); ?>:</strong>
                 <span class="<?php echo esc_attr($report->grade); ?>">
                     <?php echo ucfirst(esc_html($report->grade)); ?>
                 </span>
             </p>
             <p>Comments: <?php echo esc_html($report->comments); ?></p>
         </div>
-    <?php endforeach;
+<?php endforeach;
 
     wp_send_json_success(ob_get_clean());
 }
 add_action('wp_ajax_get_report_card', 'get_report_card_callback');
 add_action('wp_ajax_nopriv_get_report_card', 'get_report_card_callback');
 
-function enqueue_dashboard_scripts() {
+function enqueue_dashboard_scripts()
+{
     if (is_page('dashboard')) { // Ensure this script loads only on the dashboard page
         wp_enqueue_script('dashboard-js', get_template_directory_uri() . '/js/dashboard.js', array('jquery'), null, true);
         wp_localize_script('dashboard-js', 'ajax_object', array('ajax_url' => admin_url('admin-ajax.php')));
