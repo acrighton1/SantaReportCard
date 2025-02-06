@@ -1,0 +1,140 @@
+/* General Page Styling */
+.wp-block-group {
+    max-width: 800px;
+    margin: 40px auto;
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    font-family: "Arial", sans-serif;
+}
+
+/* Title Styling */
+.wp-block-heading {
+    color: #D32F2F;
+    text-align: center;
+    font-size: 28px;
+    margin-bottom: 20px;
+}
+
+/* Child & Month Info */
+.wp-block-group p {
+    font-size: 18px;
+    margin: 10px 0;
+    color: #444;
+}
+
+/* Grading Criteria */
+.criteria-list p {
+    background: #F8F8F8;
+    padding: 12px;
+    border-left: 5px solid #D32F2F;
+    margin-bottom: 10px;
+    font-size: 17px;
+}
+
+/* Comments Section */
+.report-comments {
+    background: #FAFAFA;
+    padding: 15px;
+    border-left: 5px solid #FFD700;
+    font-size: 16px;
+}
+
+/* Print Button */
+.print-btn {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.print-btn button {
+    background: #D32F2F;
+    color: white;
+    padding: 12px 20px;
+    font-size: 18px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.print-btn button:hover {
+    background: #B71C1C;
+}
+
+/* Table Styling (Dashboard Report Cards) */
+.wp-list-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.wp-list-table th, .wp-list-table td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: center;
+}
+
+.wp-list-table th {
+    background: #D32F2F;
+    color: white;
+    font-size: 18px;
+}
+
+.wp-list-table tr:nth-child(even) {
+    background: #F8F8F8;
+}
+
+/* View & Print Button */
+.button {
+    background: #008CBA;
+    color: white;
+    padding: 8px 15px;
+    font-size: 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+.button:hover {
+    background: #005F73;
+}
+
+/* Print-Friendly Styles */
+@media print {
+    .print-btn {
+        display: none;
+    }
+    
+    .wp-block-group {
+        box-shadow: none;
+        border: none;
+        max-width: 100%;
+    }
+
+    .criteria-list p, .report-comments {
+        border-left: none;
+        padding: 8px;
+    }
+
+    body {
+        background: none;
+    }
+}
+
+
+@media print {
+    body {
+        visibility: visible;
+    }
+    
+    .wp-block-group {
+        max-width: 100%;
+        width: 100%;
+    }
+
+    /* Ensure buttons are hidden in print mode */
+    .print-btn {
+        display: none !important;
+    }
+}

@@ -29,7 +29,7 @@ body {
 /* Image Section */
 .image-section {
     flex: 1;
-    background-color: #40b3b3;
+    background-color: #ff0000;
     padding: 40px;
     display: flex;
     align-items: center;
@@ -80,7 +80,7 @@ input:focus {
 button {
     width: 100%;
     padding: 15px;
-    background: #40b3b3;
+    background: #ff0000;
     color: white;
     border: none;
     border-radius: 10px;

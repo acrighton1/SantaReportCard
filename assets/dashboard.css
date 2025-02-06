@@ -1,0 +1,239 @@
+/* Dashboard Styling */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f1f5f9;
+    color: #333;
+}
+
+.dashboard {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #ffffff;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+}
+
+.sidebar h2 {
+    font-size: 24px;
+    margin-bottom: 30px;
+    color: #1e293b;
+}
+
+.sidebar nav a {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    color: #64748b;
+    text-decoration: none;
+    transition: background-color 0.3s;
+    border-radius: 5px;
+    margin-bottom: 5px;
+}
+
+.sidebar nav a:hover,
+.sidebar nav a.active {
+    background-color: #f1f5f9;
+    color: #1e293b;
+}
+
+.sidebar nav a i {
+    margin-right: 10px;
+    font-size: 18px;
+}
+
+.main-content {
+    flex: 1;
+    padding: 20px;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background-color: #ffffff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+header h1 {
+    font-size: 24px;
+    color: #1e293b;
+}
+
+.notification-icon {
+    font-size: 20px;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.card {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.card h2 {
+    font-size: 20px;
+    margin-bottom: 15px;
+    color: #1e293b;
+}
+
+.overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.overview-item {
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.overview-item.blue {
+    background-color: #e0f2fe;
+}
+
+.overview-item.green {
+    background-color: #dcfce7;
+}
+
+.overview-item p:first-child {
+    font-size: 14px;
+    color: #0369a1;
+    margin-bottom: 5px;
+}
+
+.overview-item p:last-child {
+    font-size: 24px;
+    font-weight: bold;
+    color: #0c4a6e;
+}
+
+.button {
+    display: inline-block;
+    background-color: #3b82f6;
+    color: #ffffff;
+    padding: 10px 15px;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background-color 0.3s;
+}
+
+.button:hover {
+    background-color: #2563eb;
+}
+
+.button.outline {
+    background-color: transparent;
+    border: 1px solid #3b82f6;
+    color: #3b82f6;
+}
+
+.button.outline:hover {
+    background-color: #3b82f6;
+    color: #ffffff;
+}
+
+select {
+    width: 100%;
+    max-width: 200px;
+    padding: 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+.report-card-display {
+    background-color: #f1f5f9;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+}
+
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.wp-block-button {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.wp-block-button__link {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #0073aa;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+.wp-list-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.wp-list-table th, .wp-list-table td {
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: left;
+}
+
+.wp-list-table th {
+    background-color: #f5f5f5;
+}
+
+
+/* Dashboard Navigation */
+.dashboard-navigation {
+    width: 250px;
+    background: #0073aa;
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.dashboard-navigation ul {
+    list-style: none;
+    padding: 0;
+}
+
+.dashboard-navigation li {
+    padding: 10px;
+}
+
+.dashboard-navigation a {
+    color: white;
+    text-decoration: none;
+    display: block;
+    padding: 10px;
+    transition: background 0.3s;
+}
+
+.dashboard-navigation a:hover,
+.dashboard-navigation .active {
+    background: #005177;
+    border-radius: 5px;
+}

@@ -1,8 +1,4 @@
-<!-- 
- Check if user is logged in
- if (!isset($_SESSION['user_id'])) {
-    wp_redirect(home_url('/login'));
-    exit; -->
+
 
 
 <style>
@@ -175,6 +171,8 @@
         display: flex;
         gap: 10px;
     }
+
+    
 </style>
 </head>
 <!-- wp:template-part {"slug":"header","theme":"twentytwentyfive","tagName":"header"} /-->
@@ -190,13 +188,7 @@
         <!-- /wp:heading -->
 
         <!-- wp:navigation {"overlayMenu":"never"} -->
-        <ul class="wp-block-navigation">
-            <li><a href="#" class="active">🏠 Home</a></li>
-            <li><a href="#">👥 Manage Kids</a></li>
-            <li><a href="#">📊 Report Cards</a></li>
-            <li><a href="#">⚙️ Membership</a></li>
-            <li><a href="#">🚪 Logout</a></li>
-        </ul>
+        [dashboard_nav]
         <!-- /wp:navigation -->
     </div>
     <!-- /wp:group -->
@@ -222,7 +214,7 @@
             <h2>Overview</h2>
             <!-- /wp:heading -->
             <!-- wp:shortcode -->
-            [src_registered_parents] 
+            <!-- [src_registered_parents]  -->
             <!-- /wp:shortcode -->
             <!-- wp:shortcode -->
              [dashboard_overview] 
@@ -235,8 +227,7 @@
         <div class="wp-block-group card">
             <!-- wp:heading {"level":2} -->
             <h2>Manage Kids</h2>
-            <!-- /wp:heading -->
-            <p>Child management interface will be here.</p>
+            <!-- /wp:heading -->           
         </div>
         <!-- /wp:group -->
 
@@ -254,20 +245,9 @@
             <!-- wp:group {"className":"report-card-display"} -->
             <div class="wp-block-group report-card-display">
                 <p>Select a child to view their report card.</p>
-            </div>
+            </div>            
             <!-- /wp:group -->
-
-            <!-- wp:buttons {"className":"button-group"} -->
-            <div class="wp-block-buttons button-group">
-                <div class="wp-block-button outline">
-                    <a class="wp-block-button__link" href="#">Edit Report Card</a>
-                </div>
-                <div class="wp-block-button">
-                    <a class="wp-block-button__link" href="#">Export as PDF</a>
-                </div>
-            </div>
-            <!-- /wp:buttons -->
-        </div>
+                  </div>
         <!-- /wp:group -->
 
     </div>

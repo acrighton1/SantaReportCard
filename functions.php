@@ -20,10 +20,37 @@ function twentytwentyfive_child_enqueue_styles()
         wp_enqueue_style('login-style', get_stylesheet_directory_uri() . '/assets/login.css', array('parent-style'));
     }
 
+    // Enqueue dashboard.css on dashboard page
+    if (is_page('dashboard')) { // Adjust 'dashboard' to your specific dashboard page slug if necessary
+        wp_enqueue_style('dashboard-style', get_stylesheet_directory_uri() . '/assets/dashboard.css', array('parent-style'));
+    }
+
+    // Enqueue report-card-style.css on the report card page
+    if (is_page('report-card-view')) { // Adjust 'report-card-view' to match your actual report card page slug
+        wp_enqueue_style(
+            'report-card-style',
+            get_stylesheet_directory_uri() . '/assets/report-card-style.css',
+            array('parent-style'),
+            filemtime(get_stylesheet_directory() . '/assets/report-card-style.css') // Prevents caching issues
+        );
+    }
+
+    // Ensure report-card-style.css is applied for both screen and print
+if (is_page('report-card-view')) { 
+    wp_enqueue_style(
+        'report-card-style',
+        get_stylesheet_directory_uri() . '/assets/report-card-style.css',
+        array(),
+        filemtime(get_stylesheet_directory() . '/assets/report-card-style.css'),
+        'all' // This ensures styles apply to both screen and print
+    );
+}
+
     // Enqueue custom scripts
     wp_enqueue_script('custom-scripts', get_stylesheet_directory_uri() . '/script.js', array('jquery'), null, true);
 }
 add_action('wp_enqueue_scripts', 'twentytwentyfive_child_enqueue_styles');
+
 
 // Enqueue additional external scripts and styles
 function twentytwentyfive_child_enqueue_scripts()
@@ -91,7 +118,7 @@ CREATE TABLE IF NOT EXISTS {$wpdb->prefix}report_cards (
     comments TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (kid_id) REFERENCES {$wpdb->prefix}kids(kid_id) ON DELETE CASCADE,
-    FOREIGN KEY (criteria_id) REFERENCES {$wpdb->prefix}criteria(criteria_id) ON DELETE CASCADE
+    FOREIGN KEY (criteria_id) REFERENCES {$wpdb->prefix}grading_criteria(id) ON DELETE CASCADE
 ) $charset_collate;
 
 CREATE TABLE IF NOT EXISTS {$wpdb->prefix}memberships (
@@ -140,17 +167,18 @@ function handle_parent_login()
 add_action('init', 'handle_parent_login');
 
 // Handle parent logout
+// Handle parent logout
 function handle_parent_logout()
 {
     if (isset($_GET['action']) && $_GET['action'] === 'logout') {
-        // Clear the session
         session_unset();
         session_destroy();
-        wp_redirect(home_url('/login'));
+        wp_redirect(home_url('/login')); // Redirect to the login page
         exit;
     }
 }
 add_action('init', 'handle_parent_logout');
+
 
 // Handle parent registration
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
@@ -226,8 +254,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
     }
 }
 
-
-
 function src_child_registration_form() {
     if (!isset($_SESSION['parent_email'])) {
         return '<p>You must be logged in to register a child.</p>';
@@ -258,49 +284,219 @@ function src_child_registration_form() {
                 <button type="submit" class="wp-block-button__link">Register Child</button>
             </div>
         </div>
-    </form>
-
-    <style>
-        .child-form {
-            background: #f9f9f9;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            max-width: 400px;
-            margin: 20px auto;
-        }
-        .child-form label {
-            font-weight: bold;
-            display: block;
-            margin-bottom: 5px;
-        }
-        .child-form input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            font-size: 16px;
-        }
-        .child-form button {
-            background: #0073aa;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            width: 100%;
-            text-align: center;
-            transition: 0.3s;
-        }
-        .child-form button:hover {
-            background: #005a87;
-        }
-    </style>
+    </form>    
 
     <?php return ob_get_clean();
 }
 add_shortcode('child_registration_form', 'src_child_registration_form');
+
+
+// Report Card Form
+function get_child_grading_criteria($kid_id) {
+    global $wpdb;
+    return $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}grading_criteria WHERE kid_id = %d", $kid_id));
+}
+
+function handle_report_card_submission() {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['kid_id'])) {
+        global $wpdb;
+
+        $kid_id = intval($_POST['kid_id']);
+        $month_year = sanitize_text_field($_POST['month_year']);
+        $comments = sanitize_textarea_field($_POST['santa_comments']);
+
+        // Insert the main report card entry without grades yet
+        $wpdb->insert("{$wpdb->prefix}report_cards", [
+            'kid_id' => $kid_id,
+            'month_year' => $month_year,
+            'comments' => $comments,
+            'created_at' => current_time('mysql')
+        ]);
+
+        // Get the last inserted report card ID
+        $report_card_id = $wpdb->insert_id;
+
+        // Insert each grading criteria separately
+        for ($i = 1; $i <= 5; $i++) {
+            $grade = sanitize_text_field($_POST["criteria_{$i}"]);
+            // Insert each grade with its respective criteria_id
+            $wpdb->insert("{$wpdb->prefix}report_cards", [
+                'kid_id' => $kid_id,
+                'month_year' => $month_year,
+                'criteria_id' => $i, // Assuming each criteria corresponds to criteria_1, criteria_2, etc.
+                'grade' => $grade,
+                'comments' => $comments, // If you'd like to store comments for each grade as well
+                'created_at' => current_time('mysql')
+            ]);
+        }
+
+        wp_redirect(home_url('/dashboard?success=report_card_created'));
+        exit;
+    }
+}
+add_action('init', 'handle_report_card_submission');
+
+// Generate Report Card Form Shortcode
+function generate_report_card_form() {
+    if (!isset($_SESSION['parent_email'])) {
+        return '<p>You must be logged in to create a report card.</p>';
+    }
+
+    global $wpdb;
+    $parent_email = $_SESSION['parent_email'];
+    $parent = $wpdb->get_row($wpdb->prepare("SELECT user_id FROM {$wpdb->prefix}parents WHERE email = %s", $parent_email));
+    if (!$parent) return '<p>Parent not found.</p>';
+
+    $kids = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}kids WHERE parent_id = %d", $parent->user_id));
+    if (!$kids) return '<p>No children registered.</p>';
+
+    ob_start(); ?>
+    <form method="POST">
+        <label for="kid_id">Select Child</label>
+        <select name="kid_id" id="kid_id" required onchange="fetchCriteria()">
+            <option value="">-- Select Child --</option>
+            <?php foreach ($kids as $kid) : ?>
+                <option value="<?php echo $kid->kid_id; ?>"><?php echo esc_html($kid->full_name); ?></option>
+            <?php endforeach; ?>
+        </select>
+
+        <label for="month_year">Month</label>
+        <input type="month" name="month_year" id="month_year" required>
+
+        <h4>Grading Criteria</h4>
+        <div id="grading-criteria"></div>
+
+        <label for="santa_comments">Santa's Comments</label>
+        <textarea name="santa_comments" id="santa_comments" required></textarea>
+
+        <button type="submit">Submit Report Card</button>
+    </form>
+    <script>
+        function fetchCriteria() {
+            var kid_id = document.getElementById('kid_id').value;
+            if (kid_id) {
+                fetch('<?php echo admin_url('admin-ajax.php'); ?>?action=get_grading_criteria&kid_id=' + kid_id)
+                .then(response => response.json())
+                .then(data => {
+                    let criteriaDiv = document.getElementById('grading-criteria');
+                    criteriaDiv.innerHTML = '';
+                    for (let i = 1; i <= 5; i++) {
+                        criteriaDiv.innerHTML += `
+                            <label>${data['criteria_' + i]}</label>
+                            <select name="criteria_${i}" required>
+                                <option value="green">Green</option>
+                                <option value="yellow">Yellow</option>
+                                <option value="red">Red</option>
+                            </select>
+                        `;
+                    }
+                });
+            }
+        }
+    </script>
+    <?php return ob_get_clean();
+}
+add_shortcode('generate_report_card_form', 'generate_report_card_form');
+
+// Get Grading Criteria via AJAX
+function get_grading_criteria_ajax() {
+    global $wpdb;
+    $kid_id = intval($_GET['kid_id']);
+    $criteria = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}grading_criteria WHERE kid_id = %d", $kid_id));
+    echo json_encode($criteria);
+    wp_die();
+}
+add_action('wp_ajax_get_grading_criteria', 'get_grading_criteria_ajax');
+add_action('wp_ajax_nopriv_get_grading_criteria', 'get_grading_criteria_ajax');
+
+// Display Report Cards on Dashboard with View & Print Button
+function display_report_cards() {
+    if (!isset($_SESSION['parent_email'])) {
+        return '<p>Please log in to view report cards.</p>';
+    }
+
+    global $wpdb;
+    $parent_email = $_SESSION['parent_email'];
+    
+    // Fetch parent ID
+    $parent = $wpdb->get_row($wpdb->prepare("SELECT user_id FROM {$wpdb->prefix}parents WHERE email = %s", $parent_email));
+    if (!$parent) return '<p>Parent not found.</p>';
+
+    // Fetch children
+    $kids = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}kids WHERE parent_id = %d", $parent->user_id));
+
+    if (!$kids) return '<p>No children registered.</p>';
+
+    ob_start();
+    echo '<h3>Your Children’s Report Cards</h3>';
+    
+    foreach ($kids as $kid) {
+        echo "<h4>{$kid->full_name}</h4>";
+        $report_cards = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}report_cards WHERE kid_id = %d ORDER BY created_at DESC", $kid->kid_id));
+
+        if (!$report_cards) {
+            echo "<p>No report cards available.</p>";
+            continue;
+        }
+
+        echo '<table class="wp-list-table widefat fixed striped">';
+        echo '<thead><tr><th>Month</th><th>View & Print</th></tr></thead><tbody>';
+        
+        foreach ($report_cards as $report) {
+            echo "<tr>
+                <td>{$report->month_year}</td>
+                <td><a href='" . esc_url(get_permalink(get_page_by_path('report-card-view')) . "?report_id={$report->report_id}") . "' target='_blank' class='button'>View & Print</a></td>
+            </tr>";
+        }
+
+        echo '</tbody></table>';
+    }
+
+    return ob_get_clean();
+}
+add_shortcode('display_report_cards', 'display_report_cards');
+
+
+function inject_report_card_data() {
+    if (!is_page('report-card-view') || !isset($_GET['report_id'])) {
+        return;
+    }
+
+    global $wpdb;
+    $report_id = intval($_GET['report_id']);
+    $report = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}report_cards WHERE report_id = %d", $report_id));
+
+    if (!$report) {
+        echo '<script>document.querySelector(".wp-block-group").innerHTML = "<p>Report card not found.</p>";</script>';
+        return;
+    }
+
+    $kid = $wpdb->get_row($wpdb->prepare("SELECT full_name FROM {$wpdb->prefix}kids WHERE kid_id = %d", $report->kid_id));
+    $criteria = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}grading_criteria WHERE id = %d", $report->criteria_id));
+
+    if (!$criteria) {
+        echo '<script>document.querySelector(".wp-block-group").innerHTML = "<p>No grading criteria found.</p>";</script>';
+        return;
+    }
+
+    // Build grading criteria display
+    $criteria_html = "";
+    for ($i = 1; $i <= 5; $i++) {
+        $criteria_name = isset($criteria->{"criteria_$i"}) ? esc_html($criteria->{"criteria_$i"}) : "Unnamed Criteria";
+        $grade = esc_html($report->grade); // Only one grade is stored per report
+
+        $criteria_html .= "<p><strong>{$criteria_name}:</strong> {$grade}</p>";
+    }
+
+    echo "<script>
+        document.querySelector('.child-name').textContent = '" . esc_js($kid->full_name) . "';
+        document.querySelector('.report-month').textContent = '" . esc_js($report->month_year) . "';
+        document.querySelector('.report-comments').innerHTML = '" . nl2br(esc_js($report->comments)) . "';
+        document.querySelector('.criteria-list').innerHTML = `" . $criteria_html . "`;
+    </script>";
+}
+add_action('wp_footer', 'inject_report_card_data');
+
 
 
 // Dynamically Update Dashboard
@@ -357,7 +553,7 @@ function get_dashboard_overview()
     $output .= '</div>';
     $output .= '<div class="wp-block-column">';
     $output .= '<div class="wp-block-button">';
-    $output .= '<a class="wp-block-button__link" href="#">Generate Report Card</a>';
+    $output .= '<a class="wp-block-button__link" href="/reportcard">Generate Report Card</a>';
     $output .= '</div>';
     $output .= '</div>';
     $output .= '</div>';
@@ -366,6 +562,30 @@ function get_dashboard_overview()
 }
 add_shortcode('dashboard_overview', 'get_dashboard_overview');
 
+
+//Dashboard Navigation
+function src_dashboard_navigation() {
+    $logout_url = home_url('/dashboard?action=logout'); // Adjust the logout URL to fit your setup
+
+    ob_start(); ?>
+    
+    <nav class="dashboard-navigation">
+        <ul>
+            <li><a href="#">🏠 Home</a></li>
+            <li><a href="/childregister">👥 Register Child</a></li>
+            <li><a href="#">📊 Report Cards</a></li>
+            <li><a href="#">⚙️ Membership</a></li>
+            <li><a href="<?php echo esc_url($logout_url); ?>">🚪 Logout</a></li>
+        </ul>
+    </nav>
+
+    <?php return ob_get_clean();
+}
+add_shortcode('dashboard_nav', 'src_dashboard_navigation');
+
+
+
+// Dynamically fetch registered parent
 function src_get_registered_parents()
 {
     global $wpdb;
@@ -405,89 +625,11 @@ function src_get_registered_parents()
     return $output;
 }
 
+
 // Register as a shortcode to display in Gutenberg or a page
 add_shortcode('src_registered_parents', 'src_get_registered_parents');
 
-//Dynamically fetch Children in Drop down and Associated Report Card
-function get_child_dropdown()
-{
-    if (!isset($_SESSION['parent_email'])) {
-        return '<p>Please log in to manage your kids.</p>';
-    }
 
-    global $wpdb;
-    $parent_email = $_SESSION['parent_email'];
-
-    // Fetch parent_id
-    $parent = $wpdb->get_row($wpdb->prepare(
-        "SELECT user_id FROM {$wpdb->prefix}parents WHERE email = %s",
-        $parent_email
-    ));
-
-    if (!$parent) {
-        return '<p>Parent not found.</p>';
-    }
-
-    // Fetch children associated with this parent
-    $kids = $wpdb->get_results($wpdb->prepare(
-        "SELECT kid_id, full_name FROM {$wpdb->prefix}kids WHERE parent_id = %d",
-        $parent->user_id
-    ));
-
-    if (!$kids) {
-        return '<p>No children found. <a href="#">Add a child</a></p>';
-    }
-
-    ob_start(); ?>
-    <select id="child-select">
-        <option value="">Select a child</option>
-        <?php foreach ($kids as $kid) : ?>
-            <option value="<?php echo esc_attr($kid->kid_id); ?>">
-                <?php echo esc_html($kid->full_name); ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
-    <?php return ob_get_clean();
-}
-add_shortcode('child_dropdown', 'get_child_dropdown');
-
-
-function get_report_card_callback()
-{
-    if (!is_user_logged_in() || empty($_POST['kid_id'])) {
-        wp_send_json_error('Unauthorized or missing child ID.');
-    }
-
-    global $wpdb;
-    $kid_id = intval($_POST['kid_id']);
-    $reports = $wpdb->get_results($wpdb->prepare(
-        "SELECT r.grade, r.comments, c.criteria_name 
-         FROM {$wpdb->prefix}report_cards r
-         JOIN {$wpdb->prefix}criteria c ON r.criteria_id = c.criteria_id
-         WHERE r.kid_id = %d",
-        $kid_id
-    ));
-
-    if (!$reports) {
-        wp_send_json_error('No report card found.');
-    }
-
-    ob_start();
-    foreach ($reports as $report) : ?>
-        <div class="report-card-entry">
-            <p><strong><?php echo esc_html($report->criteria_name); ?>:</strong>
-                <span class="<?php echo esc_attr($report->grade); ?>">
-                    <?php echo ucfirst(esc_html($report->grade)); ?>
-                </span>
-            </p>
-            <p>Comments: <?php echo esc_html($report->comments); ?></p>
-        </div>
-<?php endforeach;
-
-    wp_send_json_success(ob_get_clean());
-}
-add_action('wp_ajax_get_report_card', 'get_report_card_callback');
-add_action('wp_ajax_nopriv_get_report_card', 'get_report_card_callback');
 
 function enqueue_dashboard_scripts()
 {
