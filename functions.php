@@ -112,15 +112,19 @@ CREATE TABLE IF NOT EXISTS {$wpdb->prefix}grading_criteria (
 CREATE TABLE IF NOT EXISTS {$wpdb->prefix}report_cards (
     report_id INT AUTO_INCREMENT PRIMARY KEY,
     kid_id INT NOT NULL,
-    month_year DATE NOT NULL,
+    month_year DATE NOT NULL, // or VARCHAR(7) NOT NULL
     criteria_id INT NOT NULL,
-    grade ENUM('red', 'yellow', 'green') NOT NULL,
+    grade_1 ENUM('red', 'yellow', 'green') NOT NULL,
+    grade_2 ENUM('red', 'yellow', 'green') NOT NULL,
+    grade_3 ENUM('red', 'yellow', 'green') NOT NULL,
+    grade_4 ENUM('red', 'yellow', 'green') NOT NULL,
+    grade_5 ENUM('red', 'yellow', 'green') NOT NULL,
     comments TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (kid_id) REFERENCES {$wpdb->prefix}kids(kid_id) ON DELETE CASCADE,
     FOREIGN KEY (criteria_id) REFERENCES {$wpdb->prefix}grading_criteria(id) ON DELETE CASCADE
 ) $charset_collate;
-
+ 
 CREATE TABLE IF NOT EXISTS {$wpdb->prefix}memberships (
     membership_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -301,34 +305,38 @@ function handle_report_card_submission() {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['kid_id'])) {
         global $wpdb;
 
-        $kid_id = intval($_POST['kid_id']);
-        $month_year = sanitize_text_field($_POST['month_year']);
+        $kid_id = intval($_POST['kid_id']);        
         $comments = sanitize_textarea_field($_POST['santa_comments']);
 
-        // Insert the main report card entry without grades yet
+        // Fetch the grading criteria for the kid
+        $criteria = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}grading_criteria WHERE kid_id = %d",
+            $kid_id
+        ));
+
+        if (!$criteria) {
+            error_log("No grading criteria found for kid_id: {$kid_id}");
+            wp_redirect(home_url('/dashboard?error=no_criteria'));
+            exit;
+        }
+
+                // Get the current month and year in 'YYYY-MM' format
+                $month_year = date('Y-m'); // e.g., '2025-02'
+                error_log("Month Year: {$month_year}"); // Debug log
+
+        // Insert a single row with all grades
         $wpdb->insert("{$wpdb->prefix}report_cards", [
             'kid_id' => $kid_id,
             'month_year' => $month_year,
+            'criteria_id' => $criteria->id,
+            'grade_1' => sanitize_text_field($_POST['criteria_1']),
+            'grade_2' => sanitize_text_field($_POST['criteria_2']),
+            'grade_3' => sanitize_text_field($_POST['criteria_3']),
+            'grade_4' => sanitize_text_field($_POST['criteria_4']),
+            'grade_5' => sanitize_text_field($_POST['criteria_5']),
             'comments' => $comments,
             'created_at' => current_time('mysql')
         ]);
-
-        // Get the last inserted report card ID
-        $report_card_id = $wpdb->insert_id;
-
-        // Insert each grading criteria separately
-        for ($i = 1; $i <= 5; $i++) {
-            $grade = sanitize_text_field($_POST["criteria_{$i}"]);
-            // Insert each grade with its respective criteria_id
-            $wpdb->insert("{$wpdb->prefix}report_cards", [
-                'kid_id' => $kid_id,
-                'month_year' => $month_year,
-                'criteria_id' => $i, // Assuming each criteria corresponds to criteria_1, criteria_2, etc.
-                'grade' => $grade,
-                'comments' => $comments, // If you'd like to store comments for each grade as well
-                'created_at' => current_time('mysql')
-            ]);
-        }
 
         wp_redirect(home_url('/dashboard?success=report_card_created'));
         exit;
@@ -359,9 +367,6 @@ function generate_report_card_form() {
                 <option value="<?php echo $kid->kid_id; ?>"><?php echo esc_html($kid->full_name); ?></option>
             <?php endforeach; ?>
         </select>
-
-        <label for="month_year">Month</label>
-        <input type="month" name="month_year" id="month_year" required>
 
         <h4>Grading Criteria</h4>
         <div id="grading-criteria"></div>
@@ -483,7 +488,7 @@ function inject_report_card_data() {
     $criteria_html = "";
     for ($i = 1; $i <= 5; $i++) {
         $criteria_name = isset($criteria->{"criteria_$i"}) ? esc_html($criteria->{"criteria_$i"}) : "Unnamed Criteria";
-        $grade = esc_html($report->grade); // Only one grade is stored per report
+        $grade = esc_html($report->{"grade_$i"}); // Fetch the grade for each criteria
 
         $criteria_html .= "<p><strong>{$criteria_name}:</strong> {$grade}</p>";
     }
