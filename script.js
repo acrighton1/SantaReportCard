@@ -35,29 +35,27 @@ document.addEventListener("DOMContentLoaded", () => {
 // });
   
 //Child Dropdown Select for Report Card
-jQuery(document).ready(function($) {
-  $('#child-select').change(function() {
-      var kidId = $(this).val();
-      if (!kidId) return;
+// jQuery(document).ready(function($) {
+//   $('#child-select').change(function() {
+//       var kidId = $(this).val();
+//       if (!kidId) return;
 
-      $.ajax({
-          type: 'POST',
-          url: ajax_object.ajax_url,
-          data: {
-              action: 'get_report_card',
-              kid_id: kidId
-          },
-          beforeSend: function() {
-              $('.report-card-display').html('<p>Loading...</p>');
-          },
-          success: function(response) {
-              if (response.success) {
-                  $('.report-card-display').html(response.data);
-              } else {
-                  $('.report-card-display').html('<p>No report card available.</p>');
-              }
-          }
+//       $.ajax({
+//           type: 'POST',
+//           url: ajax_object.ajax_url,
+//           data: {
+//               action: 'get_report_card',
+//               kid_id: kidId
+//           },
+//           beforeSend: function() {
+//               $('.report-card-display').html('<p>Loading...</p>');
+//           },
+//           success: function(response) {
+//               if (response.success) {
+//                   $('.report-card-display').html(response.data);
+//               } else {
+//                   $('.report-card-display').html('<p>No report card available.</p>');
+//               }
+//           }
         });
-      });
-  });
-});
+

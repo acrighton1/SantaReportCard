@@ -1,10 +1,20 @@
 <?php
 
+// Include WordPress functions
+require_once(ABSPATH . 'wp-load.php');
+require_once(ABSPATH . 'wp-includes/pluggable.php');
+
 /**
  * Twenty Twenty-Five Child Theme functions and definitions
  *
  * @package twentytwentyfive-child
  */
+
+ // Start a session if not already started
+if (!session_id()) {
+    session_start();
+}
+
 
 // Enqueue parent and child theme styles
 function twentytwentyfive_child_enqueue_styles()
@@ -66,11 +76,6 @@ function twentytwentyfive_child_enqueue_scripts()
 }
 add_action('wp_enqueue_scripts', 'twentytwentyfive_child_enqueue_scripts');
 
-// Start a session if not already started
-if (!session_id()) {
-    session_start();
-}
-
 // Create Database Tables
 function santa_report_create_tables()
 {
@@ -112,14 +117,14 @@ CREATE TABLE IF NOT EXISTS {$wpdb->prefix}grading_criteria (
 CREATE TABLE IF NOT EXISTS {$wpdb->prefix}report_cards (
     report_id INT AUTO_INCREMENT PRIMARY KEY,
     kid_id INT NOT NULL,
-    month_year DATE NOT NULL, // or VARCHAR(7) NOT NULL
+    month_year DATE NOT NULL,
     criteria_id INT NOT NULL,
     grade_1 ENUM('red', 'yellow', 'green') NOT NULL,
     grade_2 ENUM('red', 'yellow', 'green') NOT NULL,
     grade_3 ENUM('red', 'yellow', 'green') NOT NULL,
     grade_4 ENUM('red', 'yellow', 'green') NOT NULL,
     grade_5 ENUM('red', 'yellow', 'green') NOT NULL,
-    comments TEXT,
+    comments VARCHAR(1000),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (kid_id) REFERENCES {$wpdb->prefix}kids(kid_id) ON DELETE CASCADE,
     FOREIGN KEY (criteria_id) REFERENCES {$wpdb->prefix}grading_criteria(id) ON DELETE CASCADE
@@ -218,7 +223,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
     global $wpdb;
 
     $full_name = isset($_POST['full_name']) ? sanitize_text_field($_POST['full_name']) : '';
-    $parent_email = $_SESSION['parent_email'];
+    $parent_email = isset($_SESSION['parent_email']) ? $_SESSION['parent_email'] : '';
+
 
     // Fetch parent ID from the database
     $parent = $wpdb->get_row($wpdb->prepare(
@@ -462,6 +468,7 @@ function display_report_cards() {
 add_shortcode('display_report_cards', 'display_report_cards');
 
 
+// Display Report Card Data
 function inject_report_card_data() {
     if (!is_page('report-card-view') || !isset($_GET['report_id'])) {
         return;
@@ -488,7 +495,7 @@ function inject_report_card_data() {
     $criteria_html = "";
     for ($i = 1; $i <= 5; $i++) {
         $criteria_name = isset($criteria->{"criteria_$i"}) ? esc_html($criteria->{"criteria_$i"}) : "Unnamed Criteria";
-        $grade = esc_html($report->{"grade_$i"}); // Fetch the grade for each criteria
+        $grade = (string) esc_html($report->{"grade_$i"}); // Fetch the grade for each criteria
 
         $criteria_html .= "<p><strong>{$criteria_name}:</strong> {$grade}</p>";
     }
