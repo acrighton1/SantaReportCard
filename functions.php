@@ -176,6 +176,26 @@ function handle_parent_login()
 }
 add_action('init', 'handle_parent_login');
 
+
+function membership_area_link() {
+    if (!session_id()) {
+        session_start();
+    }
+
+    if (isset($_SESSION['parent_email'])) {
+        return '<a href="' . home_url('/dashboard') . '" style="background-color: white; color: #dc2626; padding: 4px 8px; border-radius: 3px; text-decoration: none; font-weight: 600; font-size: 0.85rem; display: inline-block; border: 1px solid #dc2626; margin-bottom:6px;">Membership Area</a>';
+    }
+
+    return ''; // Return nothing if the user is not logged in
+}
+add_shortcode('membership_link', 'membership_area_link');
+
+
+
+
+
+
+
 // Handle parent logout
 // Handle parent logout
 function handle_parent_logout()
@@ -260,7 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
         );
 
         // Redirect to Thank You page
-        wp_redirect(site_url('/thank-you'));
+        wp_redirect(site_url('/dashboard'));
         exit;
     }
 }
@@ -731,7 +751,7 @@ function src_dashboard_navigation()
 
     <nav class="dashboard-navigation">
         <ul>
-            <li><a href="#">🏠 Home</a></li>
+            <li><a href="/">🏠 Home</a></li>
             <li><a href="/childregister">👥 Register Child</a></li>
             <li><a href="#">📊 Report Cards</a></li>
             <li><a href="#">⚙️ Membership</a></li>
