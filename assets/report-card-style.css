@@ -14,8 +14,7 @@ body {
   line-height: 1.6;
 }
 
-.wp-block-group {
-  max-width: 800px;
+.wp-block-group {  
   margin: 2rem auto;
   background-color: var(--snow-white);
   border-radius: 20px;
