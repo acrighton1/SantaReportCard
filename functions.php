@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS {$wpdb->prefix}grading_criteria (
 CREATE TABLE IF NOT EXISTS {$wpdb->prefix}report_cards (
     report_id INT AUTO_INCREMENT PRIMARY KEY,
     kid_id INT NOT NULL,
-    month_year DATE NOT NULL,
+    report_date DATE NOT NULL, -- Changed from month_year to report_date
     criteria_id INT NOT NULL,
     grade_1 ENUM('red', 'yellow', 'green') NOT NULL,
     grade_2 ENUM('red', 'yellow', 'green') NOT NULL,
@@ -129,6 +129,7 @@ CREATE TABLE IF NOT EXISTS {$wpdb->prefix}report_cards (
     FOREIGN KEY (kid_id) REFERENCES {$wpdb->prefix}kids(kid_id) ON DELETE CASCADE,
     FOREIGN KEY (criteria_id) REFERENCES {$wpdb->prefix}grading_criteria(id) ON DELETE CASCADE
 ) $charset_collate;
+
  
 CREATE TABLE IF NOT EXISTS {$wpdb->prefix}memberships (
     membership_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -270,6 +271,58 @@ function src_child_registration_form()
         return '<p>You must be logged in to register a child.</p>';
     }
 
+    $criteria_options = [
+        "Helping make the bed",
+        "Picking up toys and books",
+        "Putting laundry in the hamper or in the laundry room",
+        "Helping to feed pets",
+        "Helping to wipe up messes",
+        "Dusting with socks on their hands",
+        "Putting small items in a dishwasher",
+        "Dry mopping in small areas with help to maneuver the mop",
+        "Helping to clear and set the table",
+        "Making bed independently",
+        "Dusting",
+        "Helping out to cook and prepare food",
+        "Help carry groceries in the house",
+        "Sorting laundry whites and colors",
+        "Watering plants using a small container",
+        "Pulling garden weeds",
+        "Washing small dishes at the sink",
+        "Helping to clean their room",
+        "Putting away groceries",
+        "Taking care of pets",
+        "Vacuuming, sweeping, mopping, wiping down surfaces",
+        "Empty indoor trash cans and taking it outside",
+        "Folding and putting away laundry",
+        "Making their snacks, breakfast, and bagged lunches",
+        "Emptying and loading the dishwasher",
+        "Walking the dog with pooper-scooper supervision",
+        "Raking leaves",
+        "Clean their bedroom",
+        "Assist with making dinner",
+        "Being respectful",
+        "Good listener",
+        "Sharing",
+        "Eating healthy",
+        "Being helpful",
+        "Good manners",
+        "Being a good friend",
+        "Donating or volunteering",
+        "Going to church",
+        "Positive attitude",
+        "Honesty (Telling the truth)",
+        "Confident",
+        "Kindness",
+        "Forgiving",
+        "Taking risks",
+        "Compassion/Empathetic",
+        "Good grades",
+        "Hard worker (work ethic)",
+        "Supportive",
+        "Good friend"
+    ];
+
     ob_start(); ?>
     <form id="child-registration-form" method="POST" class="wp-block-group child-form">
         <div class="wp-block-columns">
@@ -285,7 +338,12 @@ function src_child_registration_form()
             <div class="wp-block-columns">
                 <div class="wp-block-column">
                     <label for="criteria_<?php echo $i; ?>">Criteria <?php echo $i; ?></label>
-                    <input type="text" name="criteria_<?php echo $i; ?>" id="criteria_<?php echo $i; ?>" required placeholder="Enter criteria">
+                    <select name="criteria_<?php echo $i; ?>" id="criteria_<?php echo $i; ?>" required>
+                        <option value="">Select criteria</option>
+                        <?php foreach ($criteria_options as $option) : ?>
+                            <option value="<?php echo $option; ?>"><?php echo $option; ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
             </div>
         <?php endfor; ?>
@@ -300,7 +358,6 @@ function src_child_registration_form()
 <?php return ob_get_clean();
 }
 add_shortcode('child_registration_form', 'src_child_registration_form');
-
 
 // Report Card Form
 function get_child_grading_criteria($kid_id)
@@ -329,14 +386,14 @@ function handle_report_card_submission()
             exit;
         }
 
-        // Get the current month and year in 'YYYY-MM' format
-        $month_year = date('Y-m'); // e.g., '2025-02'
-        error_log("Month Year: {$month_year}"); // Debug log
+        // Get the current date in 'YYYY-MM-DD' format
+        $report_date = date('Y-m-d'); // FIX: Define report_date
+        error_log("Report Date: {$report_date}"); // Debug log
 
         // Insert a single row with all grades
         $wpdb->insert("{$wpdb->prefix}report_cards", [
             'kid_id' => $kid_id,
-            'month_year' => $month_year,
+            "report_date" => $report_date, // FIX: Now defined properly
             'criteria_id' => $criteria->id,
             'grade_1' => sanitize_text_field($_POST['criteria_1']),
             'grade_2' => sanitize_text_field($_POST['criteria_2']),
@@ -352,6 +409,7 @@ function handle_report_card_submission()
     }
 }
 add_action('init', 'handle_report_card_submission');
+
 
 // Generate Report Card Form Shortcode
 function generate_report_card_form()
@@ -378,6 +436,9 @@ function generate_report_card_form()
             <?php endforeach; ?>
         </select>
 
+        <label for="report_date">Report Date</label>
+        <input type="date" name="report_date" id="report_date" required>
+
         <h4>Grading Criteria</h4>
         <div id="grading-criteria"></div>
 
@@ -387,31 +448,32 @@ function generate_report_card_form()
         <button type="submit">Submit Report Card</button>
     </form>
     <script>
-        function fetchCriteria() {
-            var kid_id = document.getElementById('kid_id').value;
-            if (kid_id) {
-                fetch('<?php echo admin_url('admin-ajax.php'); ?>?action=get_grading_criteria&kid_id=' + kid_id)
-                    .then(response => response.json())
-                    .then(data => {
-                        let criteriaDiv = document.getElementById('grading-criteria');
-                        criteriaDiv.innerHTML = '';
-                        for (let i = 1; i <= 5; i++) {
-                            criteriaDiv.innerHTML += `
-                            <label>${data['criteria_' + i]}</label>
-                            <select name="criteria_${i}" required>
-                                <option value="green">Green</option>
-                                <option value="yellow">Yellow</option>
-                                <option value="red">Red</option>
-                            </select>
-                        `;
-                        }
-                    });
-            }
-        }
-    </script>
+function fetchCriteria() {
+    var kid_id = document.getElementById('kid_id').value;
+    if (kid_id) {
+        fetch('<?php echo admin_url('admin-ajax.php'); ?>?action=get_grading_criteria&kid_id=' + kid_id)
+            .then(response => response.json())
+            .then(data => {
+                let criteriaDiv = document.getElementById('grading-criteria');
+                criteriaDiv.innerHTML = '';
+                for (let i = 1; i <= 5; i++) {
+                    criteriaDiv.innerHTML += `
+                    <label>${data['criteria_' + i]}</label>
+                    <select name="criteria_${i}" required>
+                        <option value="green" style="background-color: #008000; color: white;">Green</option>
+                        <option value="yellow" style="background-color: #FFD700; color: black;">Yellow</option>
+                        <option value="red" style="background-color: #FF0000; color: white;">Red</option>
+                    </select>
+                `;
+                }
+            });
+    }
+}
+ </script>
 <?php return ob_get_clean();
 }
 add_shortcode('generate_report_card_form', 'generate_report_card_form');
+
 
 // Get Grading Criteria via AJAX
 function get_grading_criteria_ajax()
@@ -425,6 +487,7 @@ function get_grading_criteria_ajax()
 add_action('wp_ajax_get_grading_criteria', 'get_grading_criteria_ajax');
 add_action('wp_ajax_nopriv_get_grading_criteria', 'get_grading_criteria_ajax');
 
+// Display Report Cards on Dashboard with View & Print Button
 // Display Report Cards on Dashboard with View & Print Button
 function display_report_cards()
 {
@@ -457,11 +520,13 @@ function display_report_cards()
         }
 
         echo '<table class="wp-list-table widefat fixed striped">';
-        echo '<thead><tr><th>Month</th><th>View & Print</th></tr></thead><tbody>';
+        echo '<thead><tr><th>Report Date</th><th>View & Print</th></tr></thead><tbody>';
 
         foreach ($report_cards as $report) {
+            $report_date = !empty($report->report_date) ? esc_html($report->report_date) : 'N/A';
+
             echo "<tr>
-                <td>{$report->month_year}</td>
+                <td>{$report_date}</td>
                 <td><a href='" . esc_url(get_permalink(get_page_by_path('report-card-view')) . "?report_id={$report->report_id}") . "' target='_blank' class='button'>View & Print</a></td>
             </tr>";
         }
@@ -474,47 +539,108 @@ function display_report_cards()
 add_shortcode('display_report_cards', 'display_report_cards');
 
 
+
 // Display Report Card Data
-function inject_report_card_data()
-{
+function inject_report_card_data() {
     if (!is_page('report-card-view') || !isset($_GET['report_id'])) {
         return;
     }
 
     global $wpdb;
     $report_id = intval($_GET['report_id']);
-    $report = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}report_cards WHERE report_id = %d", $report_id));
 
-    if (!$report) {
+    // Fetch the current report card
+    $current_report = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}report_cards WHERE report_id = %d", $report_id));
+
+    if (!$current_report) {
         echo '<script>document.querySelector(".wp-block-group").innerHTML = "<p>Report card not found.</p>";</script>';
         return;
     }
 
-    $kid = $wpdb->get_row($wpdb->prepare("SELECT full_name FROM {$wpdb->prefix}kids WHERE kid_id = %d", $report->kid_id));
-    $criteria = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}grading_criteria WHERE id = %d", $report->criteria_id));
+    // Get the previous month's report card (if it exists)
+    $previous_month_date = date('Y-m-d', strtotime('-0 day', strtotime($current_report->report_date)));
+    $previous_report = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}report_cards WHERE kid_id = %d AND report_date = %s", $current_report->kid_id, $previous_month_date));
+
+    // Fetch the child and grading criteria data
+    $kid = $wpdb->get_row($wpdb->prepare("SELECT full_name FROM {$wpdb->prefix}kids WHERE kid_id = %d", $current_report->kid_id));
+    $criteria = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}grading_criteria WHERE id = %d", $current_report->criteria_id));
 
     if (!$criteria) {
         echo '<script>document.querySelector(".wp-block-group").innerHTML = "<p>No grading criteria found.</p>";</script>';
         return;
     }
 
-    // Build grading criteria display
-    $criteria_html = "";
-    for ($i = 1; $i <= 5; $i++) {
-        $criteria_name = isset($criteria->{"criteria_$i"}) ? esc_html($criteria->{"criteria_$i"}) : "Unnamed Criteria";
-        $grade = (string) esc_html($report->{"grade_$i"}); // Fetch the grade for each criteria
+    // Define grade mappings
+    $grade_values = ["green" => 3, "yellow" => 2, "red" => 1];
+    $grade_colors = ["green" => "#008000", "yellow" => "#FFD700", "red" => "#FF0000"];
 
-        $criteria_html .= "<p><strong>{$criteria_name}:</strong> {$grade}</p>";
+    function build_criteria_html($report, $criteria, $grade_values, $grade_colors, &$average_grade) {
+        $total_score = 0;
+        $num_criteria = 0;
+        $criteria_html = "<div style='display: grid; grid-template-columns: 1fr 1fr; gap: 10px;'>";
+
+        for ($i = 1; $i <= 5; $i++) {
+            $criteria_name = isset($criteria->{"criteria_$i"}) ? esc_html($criteria->{"criteria_$i"}) : "Unnamed Criteria";
+            $grade = strtolower(trim(esc_html($report->{"grade_$i"}))); 
+            $color = isset($grade_colors[$grade]) ? $grade_colors[$grade] : "#000000"; 
+
+            // Compute average score
+            if (isset($grade_values[$grade])) {
+                $total_score += $grade_values[$grade];
+                $num_criteria++;
+            }
+
+            $criteria_html .= "<div><strong>{$criteria_name}:</strong></div>
+                <div style='padding: 5px 10px; background-color: {$color}; color: white; font-weight: bold; border-radius: 5px;'>
+                    {$grade}
+                </div>";
+        }
+
+        $criteria_html .= "</div>";
+        
+        // Compute average grade
+        if ($num_criteria > 0) {
+            $average_score = $total_score / $num_criteria;
+            if ($average_score >= 2.5) {
+                $average_grade = "green";
+            } elseif ($average_score >= 1.5) {
+                $average_grade = "yellow";
+            } else {
+                $average_grade = "red";
+            }
+        } else {
+            $average_grade = "N/A";
+        }
+
+        return $criteria_html;
     }
 
+    // Build the HTML for reports & calculate averages
+    $current_avg_grade = "";
+    $previous_avg_grade = "";
+
+    $current_criteria_html = build_criteria_html($current_report, $criteria, $grade_values, $grade_colors, $current_avg_grade);
+    $previous_criteria_html = $previous_report ? build_criteria_html($previous_report, $criteria, $grade_values, $grade_colors, $previous_avg_grade) : '<p>No previous report card available.</p>';
+
+    // Inject data into the page
     echo "<script>
         document.querySelector('.child-name').textContent = '" . esc_js($kid->full_name) . "';
-        document.querySelector('.report-month').textContent = '" . esc_js($report->month_year) . "';
-        document.querySelector('.report-comments').innerHTML = '" . nl2br(esc_js($report->comments)) . "';
-        document.querySelector('.criteria-list').innerHTML = `" . $criteria_html . "`;
+        document.querySelector('.report-date').textContent = '" . esc_js($current_report->report_date) . "';
+        document.querySelector('.report-comments').innerHTML = '" . nl2br(esc_js($current_report->comments)) . "';
+        
+        // Inject Current Month Grades
+        document.querySelector('.current-criteria').innerHTML = '<h4>Current Month Grades</h4>' + `${current_criteria_html}`;
+        
+        // Inject Previous Month Grades
+        document.querySelector('.previous-criteria').innerHTML = '<h4>Previous Month Grades</h4>' + `${previous_criteria_html}`;
+        
+        // Inject Average Grades
+        document.querySelector('.average-criteria').innerHTML = '<h4>Overall Grade</h4>' + '<div style=\"padding: 10px; background-color: " . $grade_colors[$current_avg_grade] . "; color: white; font-weight: bold; border-radius: 5px; text-align: center;\">" . strtoupper($current_avg_grade) . "</div>';
     </script>";
 }
 add_action('wp_footer', 'inject_report_card_data');
+
+
 
 
 
