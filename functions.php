@@ -3,6 +3,8 @@
 // Include WordPress functions
 require_once(ABSPATH . 'wp-load.php');
 require_once(ABSPATH . 'wp-includes/pluggable.php');
+require_once get_stylesheet_directory() . '/includes/stripe-functions.php';
+
 
 /**
  * Twenty Twenty-Five Child Theme functions and definitions
@@ -210,32 +212,108 @@ function handle_parent_logout()
 add_action('init', 'handle_parent_logout');
 
 
-// Handle parent registration
+// Handle parent registration with Stripe
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
+    // Sanitize inputs from the registration form
     $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
     $password = isset($_POST['password']) ? sanitize_text_field($_POST['password']) : '';
     $full_name = isset($_POST['full_name']) ? sanitize_text_field($_POST['full_name']) : '';
     $referral_code = isset($_POST['referral_code']) ? sanitize_text_field($_POST['referral_code']) : '';
     $membership_type = isset($_POST['membership_type']) ? sanitize_text_field($_POST['membership_type']) : '';
+    $payment_method_id = isset($_POST['payment_method_id']) ? sanitize_text_field($_POST['payment_method_id']) : '';
 
-    if (!empty($email) && !empty($password) && !empty($full_name)) {
+    // Check if necessary fields are filled
+    if (!empty($email) && !empty($password) && !empty($full_name) && !empty($payment_method_id)) {
         global $wpdb;
+
+        // Insert parent data into the database
         $inserted = $wpdb->insert(
-            "{$wpdb->prefix}parents",
+            "{$wpdb->prefix}parents", // Table name
             [
                 'email' => $email,
                 'password_hash' => wp_hash_password($password),
                 'full_name' => $full_name,
                 'referral_code' => $referral_code,
                 'membership_type' => $membership_type,
-                'created_at' => current_time('mysql')
+                'created_at' => current_time('mysql') // Store the registration date/time
             ]
         );
 
-        // Redirect to Thank You page
-        wp_redirect(site_url('/thank-you'));
-        exit;
+        // If insertion was successful, proceed to create the Stripe customer and subscription
+        if ($inserted) {
+            $parent_id = $wpdb->insert_id; // Get the inserted parent ID
+
+            // Create Stripe customer and subscription
+            create_stripe_customer_and_subscription($parent_id, $email, $full_name, $membership_type, $payment_method_id);
+
+            // Redirect to the Thank You page
+            wp_redirect(site_url('/thank-you'));
+            exit;
+        }
     }
+}
+
+/**
+ * Function to create a Stripe customer and subscription
+ */
+function create_stripe_customer_and_subscription($parent_id, $parent_email, $full_name, $membership_type, $payment_method_id) {
+    // Load the Stripe API functions (make sure you have set up Stripe correctly in stripe-functions.php)
+    require_once 'includes/stripe-functions.php';
+
+    // Set your secret Stripe key
+    \Stripe\Stripe::setApiKey('sk_test_51QqKSSRoP0VTO9exmtBOXyHYiq1bqpV0AusDwB3FszwjiBxdInhh0NBEyG0j0N4HJEmy7dCbYlPCVIG3IvTVCQ8X003xMjeh4u'); // Replace with your secret key
+
+    // Create Stripe customer
+    $customer = \Stripe\Customer::create([
+        'email' => $parent_email,
+        'name' => $full_name,
+    ]);
+
+    // Retrieve and attach the payment method to the customer
+    $payment_method = \Stripe\PaymentMethod::retrieve($payment_method_id);
+    $payment_method->attach(['customer' => $customer->id]);
+
+    // Set the default payment method for the customer
+    \Stripe\Customer::update($customer->id, [
+        'invoice_settings' => [
+            'default_payment_method' => $payment_method_id,
+        ],
+    ]);
+
+    // Select price ID based on membership type
+    $price_id = ($membership_type === 'premium') ? 'price_1QqKg5RoP0VTO9ex2iotVu1e' : 'basic_price_id'; // Replace with actual Stripe price IDs
+
+    // Create Stripe subscription
+    $subscription = \Stripe\Subscription::create([
+        'customer' => $customer->id,
+        'items' => [
+            ['price' => $price_id], // Attach the price to the subscription
+        ],
+    ]);
+
+    // Update the parent's record with the Stripe customer ID
+    global $wpdb;
+    $wpdb->update(
+        "{$wpdb->prefix}parents", // Table name
+        ['stripe_customer_id' => $customer->id], // Update the Stripe customer ID
+        ['user_id' => $parent_id] // Where to update (using parent ID)
+    );
+
+    // Insert the subscription data into the memberships table
+    $wpdb->insert(
+        "{$wpdb->prefix}memberships", // Table name
+        [
+            'user_id' => $parent_id,
+            'membership_type' => $membership_type,
+            'stripe_subscription_id' => $subscription->id,
+            'status' => 'active', // Set to active by default
+            'created_at' => current_time('mysql') // Store creation date
+        ]
+    );
+
+    // Redirect to the Thank You page
+    wp_redirect(site_url('/thank-you'));
+    exit;
 }
 
 
