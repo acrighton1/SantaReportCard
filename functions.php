@@ -47,6 +47,16 @@ function twentytwentyfive_child_enqueue_styles()
         );
     }
 
+        // Enqueue report-card-style.css on the report card page
+        if (is_page('register')) { // Adjust 'report-card-view' to match your actual report card page slug
+            wp_enqueue_style(
+                'parentregistration',
+                get_stylesheet_directory_uri() . '/assets/parentregistration.css',
+                array('parent-style'),
+                filemtime(get_stylesheet_directory() . '/assets/parentregistration.css') // Prevents caching issues
+            );
+        }
+
     // Ensure report-card-style.css is applied for both screen and print
     if (is_page('report-card-view')) {
         wp_enqueue_style(
@@ -178,8 +188,9 @@ function handle_parent_login()
 }
 add_action('init', 'handle_parent_login');
 
-
-function membership_area_link() {
+//Link for Membership Area
+function membership_area_link()
+{
     if (!session_id()) {
         session_start();
     }
@@ -192,13 +203,6 @@ function membership_area_link() {
 }
 add_shortcode('membership_link', 'membership_area_link');
 
-
-
-
-
-
-
-// Handle parent logout
 // Handle parent logout
 function handle_parent_logout()
 {
@@ -256,7 +260,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
 /**
  * Function to create a Stripe customer and subscription
  */
-function create_stripe_customer_and_subscription($parent_id, $parent_email, $full_name, $membership_type, $payment_method_id) {
+function create_stripe_customer_and_subscription($parent_id, $parent_email, $full_name, $membership_type, $payment_method_id)
+{
     // Load the Stripe API functions (make sure you have set up Stripe correctly in stripe-functions.php)
     require_once 'includes/stripe-functions.php';
 
@@ -546,16 +551,16 @@ function generate_report_card_form()
         <button type="submit">Submit Report Card</button>
     </form>
     <script>
-function fetchCriteria() {
-    var kid_id = document.getElementById('kid_id').value;
-    if (kid_id) {
-        fetch('<?php echo admin_url('admin-ajax.php'); ?>?action=get_grading_criteria&kid_id=' + kid_id)
-            .then(response => response.json())
-            .then(data => {
-                let criteriaDiv = document.getElementById('grading-criteria');
-                criteriaDiv.innerHTML = '';
-                for (let i = 1; i <= 5; i++) {
-                    criteriaDiv.innerHTML += `
+        function fetchCriteria() {
+            var kid_id = document.getElementById('kid_id').value;
+            if (kid_id) {
+                fetch('<?php echo admin_url('admin-ajax.php'); ?>?action=get_grading_criteria&kid_id=' + kid_id)
+                    .then(response => response.json())
+                    .then(data => {
+                        let criteriaDiv = document.getElementById('grading-criteria');
+                        criteriaDiv.innerHTML = '';
+                        for (let i = 1; i <= 5; i++) {
+                            criteriaDiv.innerHTML += `
                     <label>${data['criteria_' + i]}</label>
                     <select name="criteria_${i}" required>
                         <option value="green" style="background-color: #008000; color: white;">Green</option>
@@ -563,11 +568,11 @@ function fetchCriteria() {
                         <option value="red" style="background-color: #FF0000; color: white;">Red</option>
                     </select>
                 `;
-                }
-            });
-    }
-}
- </script>
+                        }
+                    });
+            }
+        }
+    </script>
 <?php return ob_get_clean();
 }
 add_shortcode('generate_report_card_form', 'generate_report_card_form');
@@ -639,7 +644,11 @@ add_shortcode('display_report_cards', 'display_report_cards');
 
 
 // Display Report Card Data
-function inject_report_card_data() {
+// Display Report Card Data
+// Display Report Card Data
+// Display Report Card Data
+function inject_report_card_data()
+{
     if (!is_page('report-card-view') || !isset($_GET['report_id'])) {
         return;
     }
@@ -655,9 +664,15 @@ function inject_report_card_data() {
         return;
     }
 
-    // Get the previous month's report card (if it exists)
+    // Try to fetch the previous month's report first
     $previous_month_date = date('Y-m-d', strtotime('-0 month', strtotime($current_report->report_date)));
     $previous_report = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}report_cards WHERE kid_id = %d AND report_date = %s", $current_report->kid_id, $previous_month_date));
+
+    // If no report is found for the same month, check for one month prior
+    if (!$previous_report) {
+        $previous_month_date = date('Y-m-d', strtotime('-1 month', strtotime($current_report->report_date)));
+        $previous_report = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}report_cards WHERE kid_id = %d AND report_date = %s", $current_report->kid_id, $previous_month_date));
+    }
 
     // Fetch the child and grading criteria data
     $kid = $wpdb->get_row($wpdb->prepare("SELECT full_name FROM {$wpdb->prefix}kids WHERE kid_id = %d", $current_report->kid_id));
@@ -670,39 +685,31 @@ function inject_report_card_data() {
 
     // Define grade mappings
     $grade_values = ["green" => 3, "yellow" => 2, "red" => 1];
-    $grade_colors = ["green" => "#008000", "yellow" => "#FFD700", "red" => "#FF0000"];
+    $grade_colors = ["green" => "#008000", "yellow" => "#FFD700", "red" => "#FF0000", "N/A" => "#A9A9A9"];
 
-    function build_criteria_html($report, $criteria, $grade_values, $grade_colors) {
-        $criteria_html = "<div style='display: grid; grid-template-columns: 1fr 1fr; gap: 10px;'>";
-
-        for ($i = 1; $i <= 5; $i++) {
-            $criteria_name = isset($criteria->{"criteria_$i"}) ? esc_html($criteria->{"criteria_$i"}) : "Unnamed Criteria";
-            $grade = strtolower(trim(esc_html($report->{"grade_$i"}))); 
-            $color = isset($grade_colors[$grade]) ? $grade_colors[$grade] : "#000000"; 
-
-            $criteria_html .= "<div><strong>{$criteria_name}:</strong></div>
-                <div style='padding: 5px 10px; background-color: {$color}; color: white; font-weight: bold; border-radius: 5px;'>
-                    {$grade}
-                </div>";
-        }
-
-        $criteria_html .= "</div>";
-        return $criteria_html;
-    }
-
-    function build_average_criteria_html($current_report, $previous_report, $criteria, $grade_values, $grade_colors) {
-        $average_html = "<div style='display: grid; grid-template-columns: 1fr 1fr; gap: 10px;'>";
+    function build_report_table($current_report, $previous_report, $criteria, $grade_values, $grade_colors)
+    {
+        $table_html = "<table style='width: 100%; border-collapse: collapse; text-align: center;'>
+            <thead>
+                <tr style='background-color: #f4f4f4;'>
+                    <th style='padding: 10px; border: 1px solid #ddd;'>Criteria</th>
+                    <th style='padding: 10px; border: 1px solid #ddd;'>Current</th>
+                    <th style='padding: 10px; border: 1px solid #ddd;'>Previous</th>
+                    <th style='padding: 10px; border: 1px solid #ddd;'>Overall</th>
+                </tr>
+            </thead>
+            <tbody>";
 
         for ($i = 1; $i <= 5; $i++) {
             $criteria_name = isset($criteria->{"criteria_$i"}) ? esc_html($criteria->{"criteria_$i"}) : "Unnamed Criteria";
 
             // Get current and previous grades
             $current_grade = strtolower(trim(esc_html($current_report->{"grade_$i"})));
-            $previous_grade = $previous_report ? strtolower(trim(esc_html($previous_report->{"grade_$i"}))) : null;
+            $previous_grade = $previous_report ? strtolower(trim(esc_html($previous_report->{"grade_$i"}))) : "N/A";
 
             // Convert grades to numeric values
             $current_value = $grade_values[$current_grade] ?? null;
-            $previous_value = $previous_grade ? ($grade_values[$previous_grade] ?? null) : null;
+            $previous_value = isset($grade_values[$previous_grade]) ? $grade_values[$previous_grade] : null;
 
             // Calculate average if both are available
             if ($current_value !== null && $previous_value !== null) {
@@ -716,41 +723,38 @@ function inject_report_card_data() {
             }
 
             // Convert numeric average back to a grade
-            $average_grade = array_search($average_value, $grade_values);
-            $color = $average_grade ? $grade_colors[$average_grade] : "#000000";
+            $average_grade = array_search($average_value, $grade_values) ?? "N/A";
 
-            $average_html .= "<div><strong>{$criteria_name}:</strong></div>
-                <div style='padding: 5px 10px; background-color: {$color}; color: white; font-weight: bold; border-radius: 5px;'>
-                    " . ($average_grade ? strtoupper($average_grade) : "N/A") . "
-                </div>";
+            // Get colors for each grade
+            $current_color = $grade_colors[$current_grade] ?? "#A9A9A9";
+            $previous_color = $grade_colors[$previous_grade] ?? "#A9A9A9";
+            $average_color = $grade_colors[$average_grade] ?? "#A9A9A9";
+
+            $table_html .= "<tr>
+                <td style='padding: 10px; border: 1px solid #ddd;'>$criteria_name</td>
+                <td style='padding: 10px; border: 1px solid #ddd; background-color: $current_color; color: white; font-weight: bold;'>". strtoupper($current_grade) ."</td>
+                <td style='padding: 10px; border: 1px solid #ddd; background-color: $previous_color; color: white; font-weight: bold;'>". strtoupper($previous_grade) ."</td>
+                <td style='padding: 10px; border: 1px solid #ddd; background-color: $average_color; color: white; font-weight: bold;'>". strtoupper($average_grade) ."</td>
+            </tr>";
         }
 
-        $average_html .= "</div>";
-        return $average_html;
+        $table_html .= "</tbody></table>";
+        return $table_html;
     }
 
-    // Generate HTML for each section
-    $current_criteria_html = build_criteria_html($current_report, $criteria, $grade_values, $grade_colors);
-    $previous_criteria_html = $previous_report ? build_criteria_html($previous_report, $criteria, $grade_values, $grade_colors) : '<p>No previous report card available.</p>';
-    $average_criteria_html = build_average_criteria_html($current_report, $previous_report, $criteria, $grade_values, $grade_colors);
+    // Generate the table HTML
+    $report_table_html = build_report_table($current_report, $previous_report, $criteria, $grade_values, $grade_colors);
 
     // Inject data into the page
     echo "<script>
         document.querySelector('.child-name').textContent = '" . esc_js($kid->full_name) . "';
         document.querySelector('.report-date').textContent = '" . esc_js($current_report->report_date) . "';
         document.querySelector('.report-comments').innerHTML = '" . nl2br(esc_js($current_report->comments)) . "';
-        
-        // Inject Current Month Grades
-        document.querySelector('.current-criteria').innerHTML = '<h4>Current Month Grades</h4>' + `${current_criteria_html}`;
-        
-        // Inject Previous Month Grades
-        document.querySelector('.previous-criteria').innerHTML = '<h4>Previous Month Grades</h4>' + `${previous_criteria_html}`;
-        
-        // Inject Average Grades for Each Criterion
-        document.querySelector('.average-criteria').innerHTML = '<h4>Average Grades</h4>' + `${average_criteria_html}`;
+        document.querySelector('.report-card-table').innerHTML = `${report_table_html}`;
     </script>";
 }
 add_action('wp_footer', 'inject_report_card_data');
+
 
 
 

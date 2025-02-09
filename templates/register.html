@@ -5,18 +5,20 @@
   <h2>Parent Registration</h2>
   <!-- /wp:heading -->
 
-  <!-- wp:html -->
+<!-- wp:html -->
 <form id="registration-form" method="POST">
   <input type="text" name="full_name" placeholder="Full Name" required>
   <input type="email" name="email" placeholder="Email" required>
   <input type="password" name="password" placeholder="Password" required>
   <input type="password" name="confirm_password" placeholder="Re-enter Password" required>
   <input type="text" name="referral_code" placeholder="Referral Code (Optional)">
-  <select name="membership_type" required>
-      <option value="basic">Basic Membership</option>
+  
+  <select name="membership_type" id="membership-type" required>
+      <option value="basic" selected>Basic Membership</option>
       <option value="premium">Premium Membership</option>
   </select>
-  <p>Total Cost: <span id="membership-cost">$10/month</span></p>
+
+  <p>Total Cost: <span id="membership-cost">$10.99/year</span></p>
 
   <!-- Stripe Card Element -->
   <div id="card-element">
@@ -26,7 +28,27 @@
 
   <button type="submit" id="submit-button">Register</button>
 </form>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+      const membershipSelect = document.getElementById("membership-type");
+      const membershipCost = document.getElementById("membership-cost");
+
+      // Define prices
+      const prices = {
+          basic: "$10.99/year",
+          premium: "$29.99/year"
+      };
+
+      // Update price when selection changes
+      membershipSelect.addEventListener("change", function() {
+          const selectedValue = membershipSelect.value;
+          membershipCost.textContent = prices[selectedValue];
+      });
+  });
+</script>
 <!-- /wp:html -->
+
 
 <script src="https://js.stripe.com/v3/"></script>
 <script>
