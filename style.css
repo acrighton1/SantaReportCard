@@ -675,8 +675,7 @@ img {
   text-decoration: none;
   font-weight: 600;
   transition: background-color 0.3s ease;
-  display: inline-block;
-  border: none;
+  display: inline-block;  
   cursor: pointer;
 }
 
@@ -699,6 +698,7 @@ img {
 }
 
 .santa-report-card-intro h2 {
+  font-family: 'Satisfy', cursive;
   font-size: 2.5rem;
   font-weight: 700;
   line-height: 1.3;
