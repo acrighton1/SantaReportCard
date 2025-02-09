@@ -513,59 +513,123 @@ nav {
     }
   }
 
-    /*  Child registration form*/    
-  .child-form {
-    background: white;
-    padding: 2rem;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    max-width: 600px;
-    margin: auto;
+    /* Child registration form */
+.child-form {
+  background: linear-gradient(135deg, #fff, #f0f0f0);
+  padding: 2.5rem;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+  margin: 2rem auto;
+  font-family: 'Arial', sans-serif;
 }
 
 .child-form h1, .child-form h4 {
-    text-align: center;
-    color: #dc2626;
-    margin-bottom: 1rem;
+  text-align: center;
+  color: #c41e3a; /* Santa red */
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+}
+
+.child-form h1 {
+  font-size: 2.5rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.child-form h4 {
+  font-size: 1.8rem;
+  border-bottom: 2px solid #c41e3a;
+  padding-bottom: 0.5rem;
+  margin-top: 2rem;
 }
 
 .child-form label {
-    font-weight: 600;
-    display: block;
-    margin-bottom: 0.5rem;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.75rem;
+  color: #333;
 }
 
 .child-form input,
 .child-form select {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 1rem;
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.child-form input:focus,
+.child-form select:focus {
+  outline: none;
+  border-color: #c41e3a;
+  box-shadow: 0 0 0 3px rgba(196, 30, 58, 0.1);
 }
 
 .child-form select {
-    background-color: white;
+  background-color: white;
+  appearance: none;
+  background-image: url('data:image/svg+xml;utf8,<svg fill="%23333" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 10px top 50%;
 }
 
 .child-form button {
-    background-color: #dc2626;
-    color: white;
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 5px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.3s ease;
-    display: block;
-    width: 100%;
-    text-align: center;
+  background-color: #c41e3a;
+  color: white;
+  padding: 1rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin-top: 2rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .child-form button:hover {
-    background-color: #b91c1c;
+  background-color: #a51a30;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
+.child-form button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
 
- 
+.wp-block-columns {
+  margin-bottom: 1.5rem;
+}
+
+/* Responsive design */
+@media (max-width: 600px) {
+  .child-form {
+      padding: 1.5rem;
+      margin: 1rem;
+  }
+
+  .child-form h1 {
+      font-size: 2rem;
+  }
+
+  .child-form h4 {
+      font-size: 1.5rem;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .child-form input,
+  .child-form select,
+  .child-form button {
+      transition: none;
+  }
+}
+

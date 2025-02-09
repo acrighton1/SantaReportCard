@@ -1,0 +1,148 @@
+:root {
+    --santa-red: #c41e3a;
+    --santa-green: #165b33;
+    --santa-gold: #ffd700;
+    --snow-white: #ffffff;
+    --text-color: #333333;
+    --background-color: #f0f0f0;
+  }
+  
+  body {
+    font-family: 'Poppins', Arial, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.6;
+  }
+  
+  .contact-us-section {
+    background: linear-gradient(135deg, #fff, #f0f0f0);
+    padding: 60px 20px;
+  }
+  
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .contact-us-title {
+    font-family: 'Satisfy', cursive;
+    text-align: center;
+    font-size: 3rem;
+    color: var(--santa-red);
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .contact-us-description {
+    text-align: center;
+    font-size: 1.1rem;
+    color: var(--text-color);
+    margin-bottom: 40px;
+  }
+  
+  .contact-form {
+    background-color: var(--snow-white);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  }
+  
+  .form-group {
+    margin-bottom: 25px;
+  }
+  
+  label {
+    display: block;
+    font-size: 1rem;
+    color: var(--text-color);
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  
+  input, textarea, select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--santa-red);
+    box-shadow: 0 0 0 3px rgba(196, 30, 58, 0.1);
+  }
+  
+  textarea {
+    resize: vertical;
+    min-height: 120px;
+  }
+  
+  .checkbox-group, .radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .checkbox-group label, .radio-group label {
+    display: flex;
+    align-items: center;
+    font-weight: normal;
+    cursor: pointer;
+  }
+  
+  .checkbox-group input[type="checkbox"],
+  .radio-group input[type="radio"] {
+    width: auto;
+    margin-right: 10px;
+  }
+  
+  .submit-button {
+    background-color: var(--santa-red);
+    color: var(--snow-white);
+    font-size: 1.1rem;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  
+  .submit-button:hover {
+    background-color: #a51a30;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .submit-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  @media (max-width: 768px) {
+    .container {
+      padding: 10px;
+    }
+    
+    .contact-us-title {
+      font-size: 2.5rem;
+    }
+    
+    .contact-form {
+      padding: 20px;
+    }
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    input, textarea, select, .submit-button {
+      transition: none;
+    }
+  }

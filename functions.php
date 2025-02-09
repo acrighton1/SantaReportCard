@@ -68,6 +68,40 @@ function twentytwentyfive_child_enqueue_styles()
         );
     }
 
+        // Ensure report-card-style.css is applied for both screen and print
+        if (is_page('reportcard')) {
+            wp_enqueue_style(
+                'report-card-form',
+                get_stylesheet_directory_uri() . '/assets/report-card-form.css',
+                array(),
+                filemtime(get_stylesheet_directory() . '/assets/report-card-form.css'),
+                'all' // This ensures styles apply to both screen and print
+            );
+        }
+
+             // Ensure report-card-style.css is applied for both screen and print
+             if (is_page('contact-us')) {
+                wp_enqueue_style(
+                    'contactus',
+                    get_stylesheet_directory_uri() . '/assets/contactus.css',
+                    array(),
+                    filemtime(get_stylesheet_directory() . '/assets/contactus.css'),
+                    'all' // This ensures styles apply to both screen and print
+                );
+            }
+
+                 // Ensure report-card-style.css is applied for both screen and print
+                 if (is_page('how-it-works')) {
+                    wp_enqueue_style(
+                        'howitworks',
+                        get_stylesheet_directory_uri() . '/assets/howitworks.css',
+                        array(),
+                        filemtime(get_stylesheet_directory() . '/assets/howitworks.css'),
+                        'all' // This ensures styles apply to both screen and print
+                    );
+                }
+    
+
     // Enqueue custom scripts
     wp_enqueue_script('custom-scripts', get_stylesheet_directory_uri() . '/script.js', array('jquery'), null, true);
 }
@@ -266,7 +300,7 @@ function create_stripe_customer_and_subscription($parent_id, $parent_email, $ful
     require_once 'includes/stripe-functions.php';
 
     // Set your secret Stripe key
-    \Stripe\Stripe::setApiKey('sk_test_51QqKSSRoP0VTO9exmtBOXyHYiq1bqpV0AusDwB3FszwjiBxdInhh0NBEyG0j0N4HJEmy7dCbYlPCVIG3IvTVCQ8X003xMjeh4u'); // Replace with your secret key
+    \Stripe\Stripe::setApiKey('sk_test_51QqQq02Melw1opnFbHe4SAAbuvv8FCtySqEZGJBLZYVil8XpMFRnEK3cQA2IbnT30nqCLqP1K9iApRNl5YLd4CU400Dj8MKHhd'); // Replace with your secret key
 
     // Create Stripe customer
     $customer = \Stripe\Customer::create([
@@ -286,7 +320,7 @@ function create_stripe_customer_and_subscription($parent_id, $parent_email, $ful
     ]);
 
     // Select price ID based on membership type
-    $price_id = ($membership_type === 'premium') ? 'price_1QqKg5RoP0VTO9ex2iotVu1e' : 'basic_price_id'; // Replace with actual Stripe price IDs
+    $price_id = ($membership_type === 'premium') ? 'price_1QqQsD2Melw1opnFkWLZzcDe' : 'basic_price_id'; // Replace with actual Stripe price IDs
 
     // Create Stripe subscription
     $subscription = \Stripe\Subscription::create([
@@ -688,59 +722,100 @@ function inject_report_card_data()
     $grade_colors = ["green" => "#008000", "yellow" => "#FFD700", "red" => "#FF0000", "N/A" => "#A9A9A9"];
 
     function build_report_table($current_report, $previous_report, $criteria, $grade_values, $grade_colors)
-    {
-        $table_html = "<table style='width: 100%; border-collapse: collapse; text-align: center;'>
-            <thead>
-                <tr style='background-color: #f4f4f4;'>
-                    <th style='padding: 10px; border: 1px solid #ddd;'>Criteria</th>
-                    <th style='padding: 10px; border: 1px solid #ddd;'>Current</th>
-                    <th style='padding: 10px; border: 1px solid #ddd;'>Previous</th>
-                    <th style='padding: 10px; border: 1px solid #ddd;'>Overall</th>
-                </tr>
-            </thead>
-            <tbody>";
+{
+    $table_html = "<table style='width: 100%; border-collapse: collapse; text-align: center;'>
+        <thead>
+            <tr style='background-color: #f4f4f4;'>
+                <th style='padding: 10px; border: 1px solid #ddd;'>Criteria</th>
+                <th style='padding: 10px; border: 1px solid #ddd;'>Current</th>
+                <th style='padding: 10px; border: 1px solid #ddd;'>Previous</th>
+                <th style='padding: 10px; border: 1px solid #ddd;'>Overall</th>
+            </tr>
+        </thead>
+        <tbody>";
 
-        for ($i = 1; $i <= 5; $i++) {
-            $criteria_name = isset($criteria->{"criteria_$i"}) ? esc_html($criteria->{"criteria_$i"}) : "Unnamed Criteria";
+    $current_total = $previous_total = $overall_total = 0;
+    $current_count = $previous_count = $overall_count = 0;
 
-            // Get current and previous grades
-            $current_grade = strtolower(trim(esc_html($current_report->{"grade_$i"})));
-            $previous_grade = $previous_report ? strtolower(trim(esc_html($previous_report->{"grade_$i"}))) : "N/A";
+    for ($i = 1; $i <= 5; $i++) {
+        $criteria_name = isset($criteria->{"criteria_$i"}) ? esc_html($criteria->{"criteria_$i"}) : "Unnamed Criteria";
 
-            // Convert grades to numeric values
-            $current_value = $grade_values[$current_grade] ?? null;
-            $previous_value = isset($grade_values[$previous_grade]) ? $grade_values[$previous_grade] : null;
+        // Get current and previous grades
+        $current_grade = strtolower(trim(esc_html($current_report->{"grade_$i"})));
+        $previous_grade = $previous_report ? strtolower(trim(esc_html($previous_report->{"grade_$i"}))) : "N/A";
 
-            // Calculate average if both are available
-            if ($current_value !== null && $previous_value !== null) {
-                $average_value = round(($current_value + $previous_value) / 2);
-            } elseif ($current_value !== null) {
-                $average_value = $current_value;
-            } elseif ($previous_value !== null) {
-                $average_value = $previous_value;
-            } else {
-                $average_value = null;
-            }
+        // Convert grades to numeric values
+        $current_value = $grade_values[$current_grade] ?? null;
+        $previous_value = isset($grade_values[$previous_grade]) ? $grade_values[$previous_grade] : null;
 
-            // Convert numeric average back to a grade
-            $average_grade = array_search($average_value, $grade_values) ?? "N/A";
-
-            // Get colors for each grade
-            $current_color = $grade_colors[$current_grade] ?? "#A9A9A9";
-            $previous_color = $grade_colors[$previous_grade] ?? "#A9A9A9";
-            $average_color = $grade_colors[$average_grade] ?? "#A9A9A9";
-
-            $table_html .= "<tr>
-                <td style='padding: 10px; border: 1px solid #ddd;'>$criteria_name</td>
-                <td style='padding: 10px; border: 1px solid #ddd; background-color: $current_color; color: white; font-weight: bold;'>". strtoupper($current_grade) ."</td>
-                <td style='padding: 10px; border: 1px solid #ddd; background-color: $previous_color; color: white; font-weight: bold;'>". strtoupper($previous_grade) ."</td>
-                <td style='padding: 10px; border: 1px solid #ddd; background-color: $average_color; color: white; font-weight: bold;'>". strtoupper($average_grade) ."</td>
-            </tr>";
+        // Calculate average if both are available
+        if ($current_value !== null && $previous_value !== null) {
+            $average_value = round(($current_value + $previous_value) / 2);
+        } elseif ($current_value !== null) {
+            $average_value = $current_value;
+        } elseif ($previous_value !== null) {
+            $average_value = $previous_value;
+        } else {
+            $average_value = null;
         }
 
-        $table_html .= "</tbody></table>";
-        return $table_html;
+        // Convert numeric average back to a grade
+        $average_grade = array_search($average_value, $grade_values) ?? "N/A";
+
+        // Get colors for each grade
+        $current_color = $grade_colors[$current_grade] ?? "#A9A9A9";
+        $previous_color = $grade_colors[$previous_grade] ?? "#A9A9A9";
+        $average_color = $grade_colors[$average_grade] ?? "#A9A9A9";
+
+        // Accumulate totals for averages
+        if ($current_value !== null) {
+            $current_total += $current_value;
+            $current_count++;
+        }
+        if ($previous_value !== null) {
+            $previous_total += $previous_value;
+            $previous_count++;
+        }
+        if ($average_value !== null) {
+            $overall_total += $average_value;
+            $overall_count++;
+        }
+
+        $table_html .= "<tr>
+            <td style='padding: 10px; border: 1px solid #ddd;'>$criteria_name</td>
+            <td style='padding: 10px; border: 1px solid #ddd; background-color: $current_color; color: white; font-weight: bold;'>". strtoupper($current_grade) ."</td>
+            <td style='padding: 10px; border: 1px solid #ddd; background-color: $previous_color; color: white; font-weight: bold;'>". strtoupper($previous_grade) ."</td>
+            <td style='padding: 10px; border: 1px solid #ddd; background-color: $average_color; color: white; font-weight: bold;'>". strtoupper($average_grade) ."</td>
+        </tr>";
     }
+
+    // Calculate overall averages
+    $final_current_value = $current_count > 0 ? round($current_total / $current_count) : null;
+    $final_previous_value = $previous_count > 0 ? round($previous_total / $previous_count) : null;
+    $final_overall_value = $overall_count > 0 ? round($overall_total / $overall_count) : null;
+
+    // Convert back to grades
+    $final_current_grade = array_search($final_current_value, $grade_values) ?? "N/A";
+    $final_previous_grade = array_search($final_previous_value, $grade_values) ?? "N/A";
+    $final_overall_grade = array_search($final_overall_value, $grade_values) ?? "N/A";
+
+    // Get colors for final averages
+    $final_current_color = $grade_colors[$final_current_grade] ?? "#A9A9A9";
+    $final_previous_color = $grade_colors[$final_previous_grade] ?? "#A9A9A9";
+    $final_overall_color = $grade_colors[$final_overall_grade] ?? "#A9A9A9";
+
+    // Append the totals row
+    $table_html .= "<tr style='font-weight: bold; background-color: #f4f4f4;'>
+        <td style='padding: 10px; border: 1px solid #ddd;'>Average</td>
+        <td style='padding: 10px; border: 1px solid #ddd; background-color: $final_current_color; color: white;'>". strtoupper($final_current_grade) ."</td>
+        <td style='padding: 10px; border: 1px solid #ddd; background-color: $final_previous_color; color: white;'>". strtoupper($final_previous_grade) ."</td>
+        <td style='padding: 10px; border: 1px solid #ddd; background-color: $final_overall_color; color: white;'>". strtoupper($final_overall_grade) ."</td>
+    </tr>";
+
+    $table_html .= "</tbody></table>";
+    return $table_html;
+}
+
 
     // Generate the table HTML
     $report_table_html = build_report_table($current_report, $previous_report, $criteria, $grade_values, $grade_colors);

@@ -1,0 +1,159 @@
+/* Register Report Card Form */
+/* Report Card Form Styling */
+/* Report Card Form Styling */
+.wp-block-group {
+    max-width: 800px;
+    margin: 2rem auto;
+    background: linear-gradient(135deg, #fff, #f0f0f0);
+    padding: 2.5rem;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    font-family: 'Arial', sans-serif;
+  }
+  
+  .wp-block-group h1 {
+    text-align: center;
+    color: #c41e3a; /* Santa red */
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .wp-block-group form {
+    margin-top: 2rem;
+  }
+  
+  .wp-block-group label {
+    display: block;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    color: #333;
+  }
+  
+  .wp-block-group select,
+  .wp-block-group input[type="date"],
+  .wp-block-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .wp-block-group select:focus,
+  .wp-block-group input[type="date"]:focus,
+  .wp-block-group textarea:focus {
+    outline: none;
+    border-color: #c41e3a;
+    box-shadow: 0 0 0 3px rgba(196, 30, 58, 0.1);
+  }
+  
+  .wp-block-group select {
+    appearance: none;
+    background-image: url('data:image/svg+xml;utf8,<svg fill="%23333" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 10px top 50%;
+  }
+  
+  .wp-block-group textarea {
+    min-height: 100px;
+    resize: vertical;
+  }
+  
+  .wp-block-group h4 {
+    color: #c41e3a;
+    font-size: 1.8rem;
+    border-bottom: 2px solid #c41e3a;
+    padding-bottom: 0.5rem;
+    margin-top: 2rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .wp-block-group button {
+    background-color: #c41e3a;
+    color: white;
+    padding: 1rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: block;
+    width: 100%;
+    text-align: center;
+    margin-top: 2rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  
+  .wp-block-group button:hover {
+    background-color: #a51a30;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .wp-block-group button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Grading Criteria Styling */
+  #grading-criteria {
+    margin-bottom: 1.5rem;
+  }
+  
+  #grading-criteria label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+  
+  #grading-criteria select {
+    margin-bottom: 1rem;
+  }
+  
+  /* Color-coded options */
+  #grading-criteria select option[value="green"] {
+    background-color: #008000;
+    color: white;
+  }
+  
+  #grading-criteria select option[value="yellow"] {
+    background-color: #FFD700;
+    color: black;
+  }
+  
+  #grading-criteria select option[value="red"] {
+    background-color: #FF0000;
+    color: white;
+  }
+  
+  /* Responsive design */
+  @media (max-width: 600px) {
+    .wp-block-group {
+        padding: 1.5rem;
+        margin: 1rem;
+    }
+  
+    .wp-block-group h1 {
+        font-size: 2rem;
+    }
+  
+    .wp-block-group h4 {
+        font-size: 1.5rem;
+    }
+  }
+  
+  /* Accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    .wp-block-group select,
+    .wp-block-group input[type="date"],
+    .wp-block-group textarea,
+    .wp-block-group button {
+        transition: none;
+    }
+  }
