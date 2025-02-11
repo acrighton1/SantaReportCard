@@ -1,8 +1,6 @@
 <?php
 
 // Include WordPress functions
-require_once(ABSPATH . 'wp-load.php');
-require_once(ABSPATH . 'wp-includes/pluggable.php');
 require_once get_stylesheet_directory() . '/includes/stripe-functions.php';
 
 
@@ -138,6 +136,7 @@ function santa_report_create_tables()
     membership_type ENUM('basic', 'premium') DEFAULT 'basic',
     stripe_customer_id VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    reset_key VARCHAR(255) DEFAULT NULL
 ) $charset_collate;
 
 CREATE TABLE IF NOT EXISTS {$wpdb->prefix}kids (
@@ -170,7 +169,12 @@ CREATE TABLE IF NOT EXISTS {$wpdb->prefix}report_cards (
     grade_3 ENUM('red', 'yellow', 'green') NOT NULL,
     grade_4 ENUM('red', 'yellow', 'green') NOT NULL,
     grade_5 ENUM('red', 'yellow', 'green') NOT NULL,
-    comments VARCHAR(1000),
+    comment_1 VARCHAR(255),  -- New column for each grading criterion comment
+    comment_2 VARCHAR(255),  
+    comment_3 VARCHAR(255),  
+    comment_4 VARCHAR(255),  
+    comment_5 VARCHAR(255),  
+    santa_comments TEXT,  -- New column for Santa's overall comments
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (kid_id) REFERENCES {$wpdb->prefix}kids(kid_id) ON DELETE CASCADE,
     FOREIGN KEY (criteria_id) REFERENCES {$wpdb->prefix}grading_criteria(id) ON DELETE CASCADE
@@ -503,8 +507,7 @@ function get_child_grading_criteria($kid_id)
     return $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}grading_criteria WHERE kid_id = %d", $kid_id));
 }
 
-function handle_report_card_submission()
-{
+function handle_report_card_submission() {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['kid_id'])) {
         global $wpdb;
 
@@ -527,7 +530,7 @@ function handle_report_card_submission()
         $report_date = date('Y-m-d'); // FIX: Define report_date
         error_log("Report Date: {$report_date}"); // Debug log
 
-        // Insert a single row with all grades
+        // Insert a single row with all grades and comments
         $wpdb->insert("{$wpdb->prefix}report_cards", [
             'kid_id' => $kid_id,
             "report_date" => $report_date, // FIX: Now defined properly
@@ -537,7 +540,12 @@ function handle_report_card_submission()
             'grade_3' => sanitize_text_field($_POST['criteria_3']),
             'grade_4' => sanitize_text_field($_POST['criteria_4']),
             'grade_5' => sanitize_text_field($_POST['criteria_5']),
-            'comments' => $comments,
+            'comment_1' => sanitize_text_field($_POST['comment_1']),
+            'comment_2' => sanitize_text_field($_POST['comment_2']),
+            'comment_3' => sanitize_text_field($_POST['comment_3']),
+            'comment_4' => sanitize_text_field($_POST['comment_4']),
+            'comment_5' => sanitize_text_field($_POST['comment_5']),
+            'santa_comments' => $comments,
             'created_at' => current_time('mysql')
         ]);
 
@@ -549,8 +557,7 @@ add_action('init', 'handle_report_card_submission');
 
 
 // Generate Report Card Form Shortcode
-function generate_report_card_form()
-{
+function generate_report_card_form() {
     if (!isset($_SESSION['parent_email'])) {
         return '<p>You must be logged in to create a report card.</p>';
     }
@@ -574,16 +581,17 @@ function generate_report_card_form()
         </select>
 
         <label for="report_date">Report Date</label>
-        <input type="date" name="report_date" id="report_date" required>
+        <input type="date" name="report_date" id="report_date" required value="<?php echo date('Y-m-d'); ?>">
 
         <h4>Grading Criteria</h4>
         <div id="grading-criteria"></div>
 
         <label for="santa_comments">Santa's Comments</label>
-        <textarea name="santa_comments" id="santa_comments" required></textarea>
+        <textarea name="santa_comments" id="santa_comments" placeholder="Enter Santa's overall comments" required></textarea>
 
         <button type="submit">Submit Report Card</button>
     </form>
+
     <script>
         function fetchCriteria() {
             var kid_id = document.getElementById('kid_id').value;
@@ -594,23 +602,23 @@ function generate_report_card_form()
                         let criteriaDiv = document.getElementById('grading-criteria');
                         criteriaDiv.innerHTML = '';
                         for (let i = 1; i <= 5; i++) {
-                            criteriaDiv.innerHTML += `
-                    <label>${data['criteria_' + i]}</label>
-                    <select name="criteria_${i}" required>
-                        <option value="green" style="background-color: #008000; color: white;">Green</option>
-                        <option value="yellow" style="background-color: #FFD700; color: black;">Yellow</option>
-                        <option value="red" style="background-color: #FF0000; color: white;">Red</option>
-                    </select>
-                `;
+                            criteriaDiv.innerHTML += 
+                                `<label>${data['criteria_' + i]}</label>
+                                <select name="criteria_${i}" required>
+                                    <option value="green" style="background-color: #008000; color: white;">Green</option>
+                                    <option value="yellow" style="background-color: #FFD700; color: black;">Yellow</option>
+                                    <option value="red" style="background-color: #FF0000; color: white;">Red</option>
+                                </select>
+                                <textarea name="comment_${i}" placeholder="Enter comments for this criterion"></textarea>`;
                         }
-                    });
+                    })
+                    .catch(error => console.error("Error fetching grading criteria:", error));
             }
         }
     </script>
-<?php return ob_get_clean();
+    <?php return ob_get_clean();
 }
 add_shortcode('generate_report_card_form', 'generate_report_card_form');
-
 
 // Get Grading Criteria via AJAX
 function get_grading_criteria_ajax()
@@ -625,7 +633,7 @@ add_action('wp_ajax_get_grading_criteria', 'get_grading_criteria_ajax');
 add_action('wp_ajax_nopriv_get_grading_criteria', 'get_grading_criteria_ajax');
 
 // Display Report Cards on Dashboard with View & Print Button
-// Display Report Cards on Dashboard with View & Print Button
+// Display Report Cards on Dashboard with View, Print, and Delete Button
 function display_report_cards()
 {
     if (!isset($_SESSION['parent_email'])) {
@@ -657,7 +665,7 @@ function display_report_cards()
         }
 
         echo '<table class="wp-list-table widefat fixed striped">';
-        echo '<thead><tr><th>Report Date</th><th>View & Print</th></tr></thead><tbody>';
+        echo '<thead><tr><th>Report Date</th><th>View & Print</th><th>Delete</th></tr></thead><tbody>';
 
         foreach ($report_cards as $report) {
             $report_date = !empty($report->report_date) ? esc_html($report->report_date) : 'N/A';
@@ -665,6 +673,12 @@ function display_report_cards()
             echo "<tr>
                 <td>{$report_date}</td>
                 <td><a href='" . esc_url(get_permalink(get_page_by_path('report-card-view')) . "?report_id={$report->report_id}") . "' target='_blank' class='button'>View & Print</a></td>
+                <td>
+                    <form method='POST' onsubmit='return confirm(\"Are you sure you want to delete this report card?\");'>
+                        <input type='hidden' name='delete_report_id' value='{$report->report_id}'>
+                        <button type='submit' class='button button-danger'>Delete</button>
+                    </form>
+                </td>
             </tr>";
         }
 
@@ -675,14 +689,27 @@ function display_report_cards()
 }
 add_shortcode('display_report_cards', 'display_report_cards');
 
-
-
-// Display Report Card Data
-// Display Report Card Data
-// Display Report Card Data
-// Display Report Card Data
-function inject_report_card_data()
+// Handle report card deletion
+function handle_report_card_deletion()
 {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_report_id'])) {
+        global $wpdb;
+        $report_id = intval($_POST['delete_report_id']);
+
+        // Delete the report card
+        $wpdb->delete("{$wpdb->prefix}report_cards", ['report_id' => $report_id]);
+
+        // Redirect to the dashboard to avoid resubmission
+        wp_redirect(home_url('/dashboard'));
+        exit;
+    }
+}
+add_action('init', 'handle_report_card_deletion');
+
+
+// Display Report Card Data
+
+function inject_report_card_data() {
     if (!is_page('report-card-view') || !isset($_GET['report_id'])) {
         return;
     }
@@ -698,15 +725,16 @@ function inject_report_card_data()
         return;
     }
 
-    // Try to fetch the previous month's report first
-    $previous_month_date = date('Y-m-d', strtotime('-0 month', strtotime($current_report->report_date)));
-    $previous_report = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}report_cards WHERE kid_id = %d AND report_date = %s", $current_report->kid_id, $previous_month_date));
 
-    // If no report is found for the same month, check for one month prior
-    if (!$previous_report) {
-        $previous_month_date = date('Y-m-d', strtotime('-1 month', strtotime($current_report->report_date)));
+        // Try to fetch the previous month's report first
+        $previous_month_date = date('Y-m-d', strtotime('-0 month', strtotime($current_report->report_date)));
         $previous_report = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}report_cards WHERE kid_id = %d AND report_date = %s", $current_report->kid_id, $previous_month_date));
-    }
+    
+        // If no report is found for the same month, check for one month prior
+        if (!$previous_report) {
+            $previous_month_date = date('Y-m-d', strtotime('-1 month', strtotime($current_report->report_date)));
+            $previous_report = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}report_cards WHERE kid_id = %d AND report_date = %s", $current_report->kid_id, $previous_month_date));
+        }
 
     // Fetch the child and grading criteria data
     $kid = $wpdb->get_row($wpdb->prepare("SELECT full_name FROM {$wpdb->prefix}kids WHERE kid_id = %d", $current_report->kid_id));
@@ -721,102 +749,120 @@ function inject_report_card_data()
     $grade_values = ["green" => 3, "yellow" => 2, "red" => 1];
     $grade_colors = ["green" => "#008000", "yellow" => "#FFD700", "red" => "#FF0000", "N/A" => "#A9A9A9"];
 
-    function build_report_table($current_report, $previous_report, $criteria, $grade_values, $grade_colors)
-{
-    $table_html = "<table style='width: 100%; border-collapse: collapse; text-align: center;'>
-        <thead>
-            <tr style='background-color: #f4f4f4;'>
-                <th style='padding: 10px; border: 1px solid #ddd;'>Criteria</th>
-                <th style='padding: 10px; border: 1px solid #ddd;'>Current</th>
-                <th style='padding: 10px; border: 1px solid #ddd;'>Previous</th>
-                <th style='padding: 10px; border: 1px solid #ddd;'>Overall</th>
-            </tr>
-        </thead>
-        <tbody>";
+    // Generate the table HTML
+    $report_table_html = build_report_table($current_report, $previous_report, $criteria, $grade_values, $grade_colors);
 
-    $current_total = $previous_total = $overall_total = 0;
-    $current_count = $previous_count = $overall_count = 0;
-
-    for ($i = 1; $i <= 5; $i++) {
-        $criteria_name = isset($criteria->{"criteria_$i"}) ? esc_html($criteria->{"criteria_$i"}) : "Unnamed Criteria";
-
-        // Get current and previous grades
-        $current_grade = strtolower(trim(esc_html($current_report->{"grade_$i"})));
-        $previous_grade = $previous_report ? strtolower(trim(esc_html($previous_report->{"grade_$i"}))) : "N/A";
-
-        // Convert grades to numeric values
-        $current_value = $grade_values[$current_grade] ?? null;
-        $previous_value = isset($grade_values[$previous_grade]) ? $grade_values[$previous_grade] : null;
-
-        // Calculate average if both are available
-        if ($current_value !== null && $previous_value !== null) {
-            $average_value = round(($current_value + $previous_value) / 2);
-        } elseif ($current_value !== null) {
-            $average_value = $current_value;
-        } elseif ($previous_value !== null) {
-            $average_value = $previous_value;
-        } else {
-            $average_value = null;
-        }
-
-        // Convert numeric average back to a grade
-        $average_grade = array_search($average_value, $grade_values) ?? "N/A";
-
-        // Get colors for each grade
-        $current_color = $grade_colors[$current_grade] ?? "#A9A9A9";
-        $previous_color = $grade_colors[$previous_grade] ?? "#A9A9A9";
-        $average_color = $grade_colors[$average_grade] ?? "#A9A9A9";
-
-        // Accumulate totals for averages
-        if ($current_value !== null) {
-            $current_total += $current_value;
-            $current_count++;
-        }
-        if ($previous_value !== null) {
-            $previous_total += $previous_value;
-            $previous_count++;
-        }
-        if ($average_value !== null) {
-            $overall_total += $average_value;
-            $overall_count++;
-        }
-
-        $table_html .= "<tr>
-            <td style='padding: 10px; border: 1px solid #ddd;'>$criteria_name</td>
-            <td style='padding: 10px; border: 1px solid #ddd; background-color: $current_color; color: white; font-weight: bold;'>". strtoupper($current_grade) ."</td>
-            <td style='padding: 10px; border: 1px solid #ddd; background-color: $previous_color; color: white; font-weight: bold;'>". strtoupper($previous_grade) ."</td>
-            <td style='padding: 10px; border: 1px solid #ddd; background-color: $average_color; color: white; font-weight: bold;'>". strtoupper($average_grade) ."</td>
-        </tr>";
-    }
-
-    // Calculate overall averages
-    $final_current_value = $current_count > 0 ? round($current_total / $current_count) : null;
-    $final_previous_value = $previous_count > 0 ? round($previous_total / $previous_count) : null;
-    $final_overall_value = $overall_count > 0 ? round($overall_total / $overall_count) : null;
-
-    // Convert back to grades
-    $final_current_grade = array_search($final_current_value, $grade_values) ?? "N/A";
-    $final_previous_grade = array_search($final_previous_value, $grade_values) ?? "N/A";
-    $final_overall_grade = array_search($final_overall_value, $grade_values) ?? "N/A";
-
-    // Get colors for final averages
-    $final_current_color = $grade_colors[$final_current_grade] ?? "#A9A9A9";
-    $final_previous_color = $grade_colors[$final_previous_grade] ?? "#A9A9A9";
-    $final_overall_color = $grade_colors[$final_overall_grade] ?? "#A9A9A9";
-
-    // Append the totals row
-    $table_html .= "<tr style='font-weight: bold; background-color: #f4f4f4;'>
-        <td style='padding: 10px; border: 1px solid #ddd;'>Average</td>
-        <td style='padding: 10px; border: 1px solid #ddd; background-color: $final_current_color; color: white;'>". strtoupper($final_current_grade) ."</td>
-        <td style='padding: 10px; border: 1px solid #ddd; background-color: $final_previous_color; color: white;'>". strtoupper($final_previous_grade) ."</td>
-        <td style='padding: 10px; border: 1px solid #ddd; background-color: $final_overall_color; color: white;'>". strtoupper($final_overall_grade) ."</td>
-    </tr>";
-
-    $table_html .= "</tbody></table>";
-    return $table_html;
+    // Inject data into the page
+    echo "<script>
+        document.querySelector('.child-name').textContent = '" . esc_js($kid->full_name) . "';
+        document.querySelector('.report-date').textContent = '" . esc_js($current_report->report_date) . "';
+        document.querySelector('.report-comments').innerHTML = '" . nl2br(esc_js($current_report->santa_comments)) . "';
+        document.querySelector('.report-card-table').innerHTML = `{$report_table_html}`;
+    </script>";
 }
+add_action('wp_footer', 'inject_report_card_data');
 
 
+
+
+    function build_report_table($current_report, $previous_report, $criteria, $grade_values, $grade_colors) {
+        $table_html = "<table style='width: 100%; border-collapse: collapse; text-align: center;'>
+            <thead>
+                <tr style='background-color: #f4f4f4;'>
+                    <th style='padding: 10px; border: 1px solid #ddd;'>Criteria</th>
+                    <th style='padding: 10px; border: 1px solid #ddd;'>Current</th>
+                    <th style='padding: 10px; border: 1px solid #ddd;'>Previous</th>
+                    <th style='padding: 10px; border: 1px solid #ddd;'>Overall</th>
+                    <th style='padding: 10px; border: 1px solid #ddd;'>Comments</th>
+                </tr>
+            </thead>
+            <tbody>";
+    
+        $current_total = $previous_total = $overall_total = 0;
+        $current_count = $previous_count = $overall_count = 0;
+    
+        for ($i = 1; $i <= 5; $i++) {
+            $criteria_name = isset($criteria->{"criteria_$i"}) ? esc_html($criteria->{"criteria_$i"}) : "Unnamed Criteria";
+    
+            // Get current and previous grades
+            $current_grade = strtolower(trim(esc_html($current_report->{"grade_$i"})));
+            $previous_grade = $previous_report ? strtolower(trim(esc_html($previous_report->{"grade_$i"}))) : "N/A";
+    
+            // Convert grades to numeric values
+            $current_value = $grade_values[$current_grade] ?? null;
+            $previous_value = isset($grade_values[$previous_grade]) ? $grade_values[$previous_grade] : null;
+    
+            // Calculate average if both are available
+            if ($current_value !== null && $previous_value !== null) {
+                $average_value = round(($current_value + $previous_value) / 2);
+            } elseif ($current_value !== null) {
+                $average_value = $current_value;
+            } elseif ($previous_value !== null) {
+                $average_value = $previous_value;
+            } else {
+                $average_value = null;
+            }
+    
+            // Convert numeric average back to a grade
+            $average_grade = array_search($average_value, $grade_values) ?? "N/A";
+    
+            // Get colors for each grade
+            $current_color = $grade_colors[$current_grade] ?? "#A9A9A9";
+            $previous_color = $grade_colors[$previous_grade] ?? "#A9A9A9";
+            $average_color = $grade_colors[$average_grade] ?? "#A9A9A9";
+    
+            // Accumulate totals for averages
+            if ($current_value !== null) {
+                $current_total += $current_value;
+                $current_count++;
+            }
+            if ($previous_value !== null) {
+                $previous_total += $previous_value;
+                $previous_count++;
+            }
+            if ($average_value !== null) {
+                $overall_total += $average_value;
+                $overall_count++;
+            }
+    
+            // Get comments for the current criterion
+            $current_comment = esc_html($current_report->{"comment_$i"});
+    
+            $table_html .= "<tr>
+                <td style='padding: 10px; border: 1px solid #ddd;'>$criteria_name</td>
+                <td style='padding: 10px; border: 1px solid #ddd; background-color: $current_color; color: white; font-weight: bold;'>". strtoupper($current_grade) ."</td>
+                <td style='padding: 10px; border: 1px solid #ddd; background-color: $previous_color; color: white; font-weight: bold;'>". strtoupper($previous_grade) ."</td>
+                <td style='padding: 10px; border: 1px solid #ddd; background-color: $average_color; color: white; font-weight: bold;'>". strtoupper($average_grade) ."</td>
+                <td style='padding: 10px; border: 1px solid #ddd;'>$current_comment</td>
+            </tr>";
+        }
+    
+        // Calculate overall averages
+        $final_current_value = $current_count > 0 ? round($current_total / $current_count) : null;
+        $final_previous_value = $previous_count > 0 ? round($previous_total / $previous_count) : null;
+        $final_overall_value = $overall_count > 0 ? round($overall_total / $overall_count) : null;
+    
+        // Convert back to grades
+        $final_current_grade = array_search($final_current_value, $grade_values) ?? "N/A";
+        $final_previous_grade = array_search($final_previous_value, $grade_values) ?? "N/A";
+        $final_overall_grade = array_search($final_overall_value, $grade_values) ?? "N/A";
+    
+        // Get colors for final averages
+        $final_current_color = $grade_colors[$final_current_grade] ?? "#A9A9A9";
+        $final_previous_color = $grade_colors[$final_previous_grade] ?? "#A9A9A9";
+        $final_overall_color = $grade_colors[$final_overall_grade] ?? "#A9A9A9";
+    
+        // Append the totals row
+        $table_html .= "<tr style='font-weight: bold; background-color: #f4f4f4;'>
+            <td style='padding: 10px; border: 1px solid #ddd;'>Average</td>
+            <td style='padding: 10px; border: 1px solid #ddd; background-color: $final_current_color; color: white;'>". strtoupper($final_current_grade) ."</td>
+            <td style='padding: 10px; border: 1px solid #ddd; background-color: $final_previous_color; color: white;'>". strtoupper($final_previous_grade) ."</td>
+            <td style='padding: 10px; border: 1px solid #ddd; background-color: $final_overall_color; color: white;'>". strtoupper($final_overall_grade) ."</td>
+            <td style='padding: 10px; border: 1px solid #ddd;'></td>
+        </tr>";
+    
+        $table_html .= "</tbody></table>";
+        return $table_html;
     // Generate the table HTML
     $report_table_html = build_report_table($current_report, $previous_report, $criteria, $grade_values, $grade_colors);
 
@@ -909,9 +955,7 @@ function src_dashboard_navigation()
     <nav class="dashboard-navigation">
         <ul>
             <li><a href="/">🏠 Home</a></li>
-            <li><a href="/childregister">👥 Register Child</a></li>
-            <li><a href="#">📊 Report Cards</a></li>
-            <li><a href="#">⚙️ Membership</a></li>
+            <li><a href="/childregister">👥 Register Child</a></li>         
             <li><a href="<?php echo esc_url($logout_url); ?>">🚪 Logout</a></li>
         </ul>
     </nav>
@@ -968,6 +1012,166 @@ add_shortcode('src_registered_parents', 'src_get_registered_parents');
 
 
 
+// Shortcode to display the forgot password form
+// Shortcode to display the forgot password form
+// Shortcode to display the forgot password form
+function forgot_password_form() {
+    ob_start();
+    ?>
+    <style>
+        .forgot-password-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .forgot-password-form {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 300px;
+        }
+        .forgot-password-form label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .forgot-password-form input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .forgot-password-form button {
+            width: 100%;
+            padding: 10px;
+            background: #0073aa;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .forgot-password-form button:hover {
+            background: #005f8d;
+        }
+    </style>
+    <div class="forgot-password-container">
+        <form class="forgot-password-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+            <input type="hidden" name="action" value="forgot_password">
+            <label for="user_login">Enter Your Email To Reset Password:</label>
+            <input type="email" name="user_login" id="user_login" required>
+            <button type="submit">Reset Password</button>
+        </form>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+add_shortcode('forgot_password_form', 'forgot_password_form');
+
+// Shortcode to display the password reset form
+function password_reset_form() {
+    if (!isset($_GET['key']) || !isset($_GET['login'])) {
+        return '<p>Invalid password reset link.</p>';
+    }
+
+    ob_start();
+    ?>
+    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+        <input type="hidden" name="action" value="reset_password">
+        <input type="hidden" name="key" value="<?php echo esc_attr($_GET['key']); ?>">
+        <input type="hidden" name="login" value="<?php echo esc_attr($_GET['login']); ?>">
+        <label for="new_password">New Password:</label>
+        <input type="password" name="new_password" id="new_password" required>
+        <button type="submit">Reset Password</button>
+    </form>
+    <?php
+    return ob_get_clean();
+}
+add_shortcode('password_reset_form', 'password_reset_form');
+
+// Handle the forgot password request
+function handle_forgot_password() {
+    if (isset($_POST['user_login'])) {
+        global $wpdb;
+        $user_login = sanitize_email($_POST['user_login']);
+        $user = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}parents WHERE email = %s", $user_login));
+
+        if ($user) {
+            // Generate the reset key
+            $reset_key = wp_generate_password(20, false);
+
+            // Store the reset key in the database
+            $wpdb->update(
+                "{$wpdb->prefix}parents",
+                array('reset_key' => $reset_key),
+                array('user_id' => $user->user_id)
+            );
+
+            // Create the reset URL
+            $reset_url = add_query_arg(array(
+                'action' => 'rp',
+                'key' => $reset_key,
+                'login' => rawurlencode($user->email)
+            ), home_url('/passwordreset'));
+
+            // Send the reset email
+            $subject = 'Password Reset Request';
+            $message = "Hi {$user->full_name},\n\n";
+            $message .= "To reset your password, please click the following link:\n\n";
+            $message .= $reset_url . "\n\n";
+            $message .= "If you did not request a password reset, please ignore this email.\n\n";
+            $message .= "Thanks,\n";
+            $message .= "Santa Report Card Team";
+
+            wp_mail($user->email, $subject, $message);
+
+            // Redirect to a confirmation page
+            wp_redirect(home_url('/passwordresetconfirmation'));
+            exit;
+        } else {
+            // Redirect to an error page
+            wp_redirect(home_url('/passwordreseterror'));
+            exit;
+        }
+    }
+}
+add_action('admin_post_nopriv_forgot_password', 'handle_forgot_password');
+add_action('admin_post_forgot_password', 'handle_forgot_password');
+
+// Handle the password reset request
+function handle_password_reset() {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['key']) && isset($_POST['login']) && isset($_POST['new_password'])) {
+        global $wpdb;
+        $key = sanitize_text_field($_POST['key']);
+        $login = sanitize_text_field($_POST['login']);
+        $new_password = sanitize_text_field($_POST['new_password']);
+
+        $user = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}parents WHERE email = %s AND reset_key = %s", $login, $key));
+
+        if ($user) {
+            // Update the user's password
+            $wpdb->update(
+                "{$wpdb->prefix}parents",
+                array('password_hash' => wp_hash_password($new_password), 'reset_key' => ''),
+                array('user_id' => $user->user_id)
+            );
+
+            // Redirect to a confirmation page
+            wp_redirect(home_url('/passwordresetsuccess'));
+            exit;
+        } else {
+            // Redirect to an error page
+            wp_redirect(home_url('/passwordreseterror'));
+            exit;
+        }
+    }
+}
+add_action('admin_post_nopriv_reset_password', 'handle_password_reset');
+add_action('admin_post_reset_password', 'handle_password_reset');
 function enqueue_dashboard_scripts()
 {
     if (is_page('dashboard')) { // Ensure this script loads only on the dashboard page

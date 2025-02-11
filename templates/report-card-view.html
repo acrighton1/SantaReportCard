@@ -17,7 +17,30 @@
 
     <p class="has-text-align-center">Remember, he sees you when you're sleeping, he knows when you're awake, he knows
         when you've been bad or good. So...be good for goodness' sake!</p>
-    <p class="has-text-align-center font-bold">Only 324 days until Christmas!</p>
+        <p class="has-text-align-center font-bold" id="countdown"></p>
+    <script>
+        function calculateDaysUntilChristmas() {
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const christmasDate = new Date(currentYear, 11, 25); // December 25th
+    
+            // If Christmas has already passed this year, calculate for next year
+            if (today > christmasDate) {
+                christmasDate.setFullYear(currentYear + 1);
+            }
+    
+            const oneDay = 24 * 60 * 60 * 1000; // Hours * minutes * seconds * milliseconds
+            const daysUntilChristmas = Math.round((christmasDate - today) / oneDay);
+    
+            return daysUntilChristmas;
+        }
+    
+        document.addEventListener('DOMContentLoaded', function() {
+            const countdownElement = document.getElementById('countdown');
+            const daysUntilChristmas = calculateDaysUntilChristmas();
+            countdownElement.textContent = `Only ${daysUntilChristmas} days until Christmas!`;
+        });
+    </script>
 
     <div class="wp-block-button print-btn">
         <button onclick="window.print()">Print Report Card</button>

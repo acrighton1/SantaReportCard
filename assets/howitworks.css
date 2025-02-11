@@ -44,8 +44,7 @@
   }
   
   .page-header::before,
-  .page-header::after {
-    content: '❄️';
+  .page-header::after {  
     font-size: 2rem;
     position: absolute;
     top: 50%;
