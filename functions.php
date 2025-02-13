@@ -296,9 +296,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
     }
 }
 
-/**
- * Function to create a Stripe customer and subscription with a referral code and send a thank you email
- */
+
 /**
  * Function to create a Stripe customer and subscription with a referral code and send a thank you email
  */
@@ -332,17 +330,20 @@ function create_stripe_customer_and_subscription($parent_id, $parent_email, $ful
     ]);
 
     // Select price ID based on membership type
-    $price_id = ($membership_type === 'premium') ? 'price_1QqQsD2Melw1opnFkWLZzcDe' : 'price_1QrzvQ2Melw1opnF2nvqQ2gM';
+    $price_id = ($membership_type === 'premium') ? 'price_1QrzvQ2Melw1opnF2nvqQ2gM' : 'price_1QrzvQ2Melw1opnF2nvqQ2gM';
 
-    // Initialize coupon_id and metadata
+    
+
+ /////////Stripe Registration Coupon Code///////////
+/////////Stripe Registration Coupon Code///////////
 $coupon_id = null;
 $coupon_metadata = null;  // Variable to store coupon metadata
 
 // Check if a referral code was provided
-if ($referral_code) {
+if (!empty($referral_code)) {
     try {
         error_log("Trying to retrieve promotion code: " . $referral_code); // Log the actual referral code
-        $promo = \Stripe\PromotionCode::retrieve($referral_code);
+        $promo = \Stripe\Coupon::retrieve($referral_code); // Use $referral_code instead of $coupon_id
         error_log("Retrieved promotion code object: " . print_r($promo, true));
 
         if ($promo && $promo->active && $promo->coupon) {  // Check if promo exists, is active, AND has a coupon
@@ -357,10 +358,12 @@ if ($referral_code) {
     } catch (\Exception $e) {
         error_log('Stripe Error: ' . $e->getMessage());
     }
+} else {
+    error_log("No referral code provided, skipping coupon logic.");
 }
 
-// If no coupon_id from the referral code, fetch available coupons
-if (!$coupon_id) {
+// Only fetch available coupons if no coupon_id was set from the referral code
+if (!$coupon_id && !empty($referral_code)) {
     try {
         error_log("Fetching available coupons...");
         $coupons = \Stripe\Coupon::all(['limit' => 10]); // Limit the number of coupons fetched
@@ -390,53 +393,53 @@ if ($coupon_id) {
     $subscription_data['coupon'] = $coupon_id;
 }
 
-    // Create the Stripe subscription
-    try {
-        $subscription = \Stripe\Subscription::create($subscription_data);
+// Create the Stripe subscription
+try {
+    $subscription = \Stripe\Subscription::create($subscription_data);
 
-        // Store Stripe customer ID in the database
-        global $wpdb;
-        $wpdb->update(
-            "{$wpdb->prefix}parents",
-            ['stripe_customer_id' => $customer->id],
-            ['user_id' => $parent_id]
-        );
+    // Store Stripe customer ID in the database
+    global $wpdb;
+    $wpdb->update(
+        "{$wpdb->prefix}parents",
+        ['stripe_customer_id' => $customer->id],
+        ['user_id' => $parent_id]
+    );
 
-        // Insert subscription data into memberships table
-        $wpdb->insert(
-            "{$wpdb->prefix}memberships",
-            [
-                'user_id' => $parent_id,
-                'membership_type' => $membership_type,
-                'stripe_subscription_id' => $subscription->id,
-                'status' => 'active',
-                'created_at' => current_time('mysql'),
-                'referral_code' => $referral_code
-            ]
-        );
+    // Insert subscription data into memberships table
+    $wpdb->insert(
+        "{$wpdb->prefix}memberships",
+        [
+            'user_id' => $parent_id,
+            'membership_type' => $membership_type,
+            'stripe_subscription_id' => $subscription->id,
+            'status' => 'active',
+            'created_at' => current_time('mysql'),
+            'referral_code' => $referral_code
+        ]
+    );
 
-        // Send thank you email
-        $subject = 'Thank You for Registering!';
-        $message = "Hi {$full_name},\n\n";
-        $message .= "Thank you for registering and subscribing to our service. We are excited to have you on board!\n\n";
-        if ($referral_code) {
-            $message .= "You used the referral code: {$referral_code}. Your discount has been applied.\n\n";
-        }
-        $message .= "If you have any questions, feel free to contact us.\n\n";
-        $message .= "Thanks,\n";
-        $message .= "Santa Report Card Team";
-
-        $headers = ['Content-Type: text/html; charset=UTF-8', 'From: Santa Report Card <no-reply@santareportcard.com>'];
-        wp_mail($parent_email, $subject, $message, $headers);
-
-        // Redirect to Thank You page
-        wp_redirect(site_url('/thank-you'));
-        exit;
-    } catch (\Stripe\Exception\ApiErrorException $e) {
-        // Handle Stripe subscription creation error
-        error_log('Stripe Subscription Creation Error: ' . $e->getMessage());
-        wp_die('There was an issue creating your subscription. Please try again later.');
+    // Send thank you email
+    $subject = 'Thank You for Registering!';
+    $message = "Hi {$full_name},\n\n";
+    $message .= "Thank you for registering and subscribing to our service. We are excited to have you on board!\n\n";
+    if ($referral_code) {
+        $message .= "You used the referral code: {$referral_code}. Your discount has been applied.\n\n";
     }
+    $message .= "If you have any questions, feel free to contact us.\n\n";
+    $message .= "Thanks,\n";
+    $message .= "Santa Report Card Team";
+
+    $headers = ['Content-Type: text/html; charset=UTF-8', 'From: Santa Report Card <no-reply@santareportcard.com>'];
+    wp_mail($parent_email, $subject, $message, $headers);
+
+    // Redirect to Thank You page
+    wp_redirect(site_url('/thank-you'));
+    exit;
+} catch (\Stripe\Exception\ApiErrorException $e) {
+    // Handle Stripe subscription creation error
+    error_log('Stripe Subscription Creation Error: ' . $e->getMessage());
+    wp_die('There was an issue creating your subscription. Please try again later.');
+}
 }
 
 
