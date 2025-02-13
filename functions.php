@@ -200,6 +200,7 @@ CREATE TABLE IF NOT EXISTS {$wpdb->prefix}memberships (
 // Run on theme activation
 add_action('after_switch_theme', 'santa_report_create_tables');
 
+
 // Handle parent login
 function handle_parent_login()
 {
@@ -286,7 +287,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
             $parent_id = $wpdb->insert_id; // Get the inserted parent ID
 
             // Create Stripe customer and subscription
-            create_stripe_customer_and_subscription($parent_id, $email, $full_name, $membership_type, $payment_method_id);
+            create_stripe_customer_and_subscription($parent_id, $email, $full_name, $membership_type, $payment_method_id, $referral_code);
 
             // Redirect to the Thank You page
             wp_redirect(site_url('/thank-you'));
@@ -296,27 +297,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
 }
 
 /**
- * Function to create a Stripe customer and subscription
+ * Function to create a Stripe customer and subscription with a referral code and send a thank you email
  */
-function create_stripe_customer_and_subscription($parent_id, $parent_email, $full_name, $membership_type, $payment_method_id)
+/**
+ * Function to create a Stripe customer and subscription with a referral code and send a thank you email
+ */
+function create_stripe_customer_and_subscription($parent_id, $parent_email, $full_name, $membership_type, $payment_method_id, $referral_code)
 {
-    // Load the Stripe API functions (make sure you have set up Stripe correctly in stripe-functions.php)
     require_once 'includes/stripe-functions.php';
 
-    // Set your secret Stripe key
-    \Stripe\Stripe::setApiKey('sk_test_51QqQq02Melw1opnFbHe4SAAbuvv8FCtySqEZGJBLZYVil8XpMFRnEK3cQA2IbnT30nqCLqP1K9iApRNl5YLd4CU400Dj8MKHhd'); // Replace with your secret key
+    \Stripe\Stripe::setApiKey('sk_test_51QqQq02Melw1opnFbHe4SAAbuvv8FCtySqEZGJBLZYVil8XpMFRnEK3cQA2IbnT30nqCLqP1K9iApRNl5YLd4CU400Dj8MKHhd');
 
     // Create Stripe customer
-    $customer = \Stripe\Customer::create([
+    $customer_data = [
         'email' => $parent_email,
         'name' => $full_name,
-    ]);
+        'metadata' => []
+    ];
 
-    // Retrieve and attach the payment method to the customer
+    if ($referral_code) {
+        $customer_data['metadata']['referral_code'] = $referral_code;
+    }
+
+    $customer = \Stripe\Customer::create($customer_data);
+
+    // Attach the payment method to the customer
     $payment_method = \Stripe\PaymentMethod::retrieve($payment_method_id);
     $payment_method->attach(['customer' => $customer->id]);
 
-    // Set the default payment method for the customer
     \Stripe\Customer::update($customer->id, [
         'invoice_settings' => [
             'default_payment_method' => $payment_method_id,
@@ -324,39 +332,196 @@ function create_stripe_customer_and_subscription($parent_id, $parent_email, $ful
     ]);
 
     // Select price ID based on membership type
-    $price_id = ($membership_type === 'premium') ? 'price_1QqQsD2Melw1opnFkWLZzcDe' : 'basic_price_id'; // Replace with actual Stripe price IDs
+    $price_id = ($membership_type === 'premium') ? 'price_1QqQsD2Melw1opnFkWLZzcDe' : 'price_1QrzvQ2Melw1opnF2nvqQ2gM';
 
-    // Create Stripe subscription
-    $subscription = \Stripe\Subscription::create([
-        'customer' => $customer->id,
-        'items' => [
-            ['price' => $price_id], // Attach the price to the subscription
-        ],
-    ]);
+    // Initialize coupon_id and metadata
+$coupon_id = null;
+$coupon_metadata = null;  // Variable to store coupon metadata
 
-    // Update the parent's record with the Stripe customer ID
-    global $wpdb;
-    $wpdb->update(
-        "{$wpdb->prefix}parents", // Table name
-        ['stripe_customer_id' => $customer->id], // Update the Stripe customer ID
-        ['user_id' => $parent_id] // Where to update (using parent ID)
-    );
+// Check if a referral code was provided
+if ($referral_code) {
+    try {
+        error_log("Trying to retrieve promotion code: " . $referral_code); // Log the actual referral code
+        $promo = \Stripe\PromotionCode::retrieve($referral_code);
+        error_log("Retrieved promotion code object: " . print_r($promo, true));
 
-    // Insert the subscription data into the memberships table
-    $wpdb->insert(
-        "{$wpdb->prefix}memberships", // Table name
-        [
-            'user_id' => $parent_id,
-            'membership_type' => $membership_type,
-            'stripe_subscription_id' => $subscription->id,
-            'status' => 'active', // Set to active by default
-            'created_at' => current_time('mysql') // Store creation date
-        ]
-    );
+        if ($promo && $promo->active && $promo->coupon) {  // Check if promo exists, is active, AND has a coupon
+            error_log("Applying coupon: " . $promo->coupon->id);
+            $coupon_id = $promo->coupon->id;
+            $coupon_metadata = $promo->coupon->metadata;  // Store coupon metadata
+        } else {
+            error_log("Promotion code not found, not active, or no associated coupon: " . $referral_code);
+        }
+    } catch (\Stripe\Exception\InvalidPromotionCode $e) {
+        error_log('Invalid Promotion Code: ' . $e->getMessage() . " Code: " . $referral_code);
+    } catch (\Exception $e) {
+        error_log('Stripe Error: ' . $e->getMessage());
+    }
+}
 
-    // Redirect to the Thank You page
-    wp_redirect(site_url('/thank-you'));
-    exit;
+// If no coupon_id from the referral code, fetch available coupons
+if (!$coupon_id) {
+    try {
+        error_log("Fetching available coupons...");
+        $coupons = \Stripe\Coupon::all(['limit' => 10]); // Limit the number of coupons fetched
+        if (count($coupons->data) > 0) {
+            // Use the first available coupon
+            $coupon_id = $coupons->data[0]->id;
+            $coupon_metadata = $coupons->data[0]->metadata;  // Store metadata of the first coupon
+            error_log("Using available coupon: " . $coupon_id);
+        }
+    } catch (Exception $e) {
+        error_log('Stripe Coupon Fetch Error: ' . $e->getMessage());
+    }
+}
+
+// Now you can use the coupon_id and coupon_metadata
+// For example, you can include coupon metadata in the subscription data
+$subscription_data = [
+    'customer' => $customer->id,
+    'items' => [['price' => $price_id]], // Attach price
+    'metadata' => [
+        'coupon_metadata' => json_encode($coupon_metadata),  // Store coupon metadata in subscription metadata
+    ],
+];
+
+// Apply the coupon if available
+if ($coupon_id) {
+    $subscription_data['coupon'] = $coupon_id;
+}
+
+    // Create the Stripe subscription
+    try {
+        $subscription = \Stripe\Subscription::create($subscription_data);
+
+        // Store Stripe customer ID in the database
+        global $wpdb;
+        $wpdb->update(
+            "{$wpdb->prefix}parents",
+            ['stripe_customer_id' => $customer->id],
+            ['user_id' => $parent_id]
+        );
+
+        // Insert subscription data into memberships table
+        $wpdb->insert(
+            "{$wpdb->prefix}memberships",
+            [
+                'user_id' => $parent_id,
+                'membership_type' => $membership_type,
+                'stripe_subscription_id' => $subscription->id,
+                'status' => 'active',
+                'created_at' => current_time('mysql'),
+                'referral_code' => $referral_code
+            ]
+        );
+
+        // Send thank you email
+        $subject = 'Thank You for Registering!';
+        $message = "Hi {$full_name},\n\n";
+        $message .= "Thank you for registering and subscribing to our service. We are excited to have you on board!\n\n";
+        if ($referral_code) {
+            $message .= "You used the referral code: {$referral_code}.\n\n";
+        }
+        $message .= "If you have any questions, feel free to contact us.\n\n";
+        $message .= "Thanks,\n";
+        $message .= "Santa Report Card Team";
+
+        $headers = ['Content-Type: text/html; charset=UTF-8', 'From: Santa Report Card <no-reply@santareportcard.com>'];
+        wp_mail($parent_email, $subject, $message, $headers);
+
+        // Redirect to Thank You page
+        wp_redirect(site_url('/thank-you'));
+        exit;
+    } catch (\Stripe\Exception\ApiErrorException $e) {
+        // Handle Stripe subscription creation error
+        error_log('Stripe Subscription Creation Error: ' . $e->getMessage());
+        wp_die('There was an issue creating your subscription. Please try again later.');
+    }
+}
+
+
+
+// Handle parent registration with Stripe
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
+    // Sanitize inputs from the registration form
+    $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
+    $password = isset($_POST['password']) ? sanitize_text_field($_POST['password']) : '';
+    $full_name = isset($_POST['full_name']) ? sanitize_text_field($_POST['full_name']) : '';
+    $referral_code = isset($_POST['referral_code']) ? sanitize_text_field($_POST['referral_code']) : '';
+    $membership_type = isset($_POST['membership_type']) ? sanitize_text_field($_POST['membership_type']) : '';
+    $payment_method_id = isset($_POST['payment_method_id']) ? sanitize_text_field($_POST['payment_method_id']) : '';
+
+    // Check if necessary fields are filled
+    if (!empty($email) && !empty($password) && !empty($full_name) && !empty($payment_method_id)) {
+        global $wpdb;
+
+        // Insert parent data into the database
+        $inserted = $wpdb->insert(
+            "{$wpdb->prefix}parents", // Table name
+            [
+                'email' => $email,
+                'password_hash' => wp_hash_password($password),
+                'full_name' => $full_name,
+                'referral_code' => $referral_code,
+                'membership_type' => $membership_type,
+                'created_at' => current_time('mysql') // Store the registration date/time
+            ]
+        );
+
+        // If insertion was successful, proceed to create the Stripe customer and subscription
+        if ($inserted) {
+            $parent_id = $wpdb->insert_id; // Get the inserted parent ID
+
+            // Create Stripe customer and subscription
+            create_stripe_customer_and_subscription($parent_id, $email, $full_name, $membership_type, $payment_method_id, $referral_code);
+
+            // Redirect to the Thank You page
+            wp_redirect(site_url('/thank-you'));
+            exit;
+        }
+    }
+}
+
+// Register REST API endpoint to fetch Stripe prices
+add_action('rest_api_init', function () {
+    register_rest_route('santa-report-card/v1', '/prices', array(
+        'methods' => 'GET',
+        'callback' => 'get_stripe_prices',
+    ));
+});
+
+function get_stripe_prices() {
+    require_once 'includes/stripe-functions.php';
+
+    \Stripe\Stripe::setApiKey('sk_test_51QqQq02Melw1opnFbHe4SAAbuvv8FCtySqEZGJBLZYVil8XpMFRnEK3cQA2IbnT30nqCLqP1K9iApRNl5YLd4CU400Dj8MKHhd'); // Replace with your secret key
+
+    try {
+        $prices = \Stripe\Price::all(['limit' => 10]);
+        return $prices->data;
+    } catch (Exception $e) {
+        return new WP_Error('stripe_error', $e->getMessage(), array('status' => 500));
+    }
+}
+
+// Register REST API endpoint to fetch Stripe promotion codes
+add_action('rest_api_init', function () {
+    register_rest_route('santa-report-card/v1', '/promotion-codes', array(
+        'methods' => 'GET',
+        'callback' => 'get_stripe_promotion_codes',
+    ));
+});
+
+function get_stripe_promotion_codes() {
+    require_once 'includes/stripe-functions.php';
+
+    \Stripe\Stripe::setApiKey('sk_test_51QqQq02Melw1opnFbHe4SAAbuvv8FCtySqEZGJBLZYVil8XpMFRnEK3cQA2IbnT30nqCLqP1K9iApRNl5YLd4CU400Dj8MKHhd'); // Replace with your secret key
+
+    try {
+        $promotion_codes = \Stripe\PromotionCode::all(['limit' => 100]);
+        return $promotion_codes->data;
+    } catch (Exception $e) {
+        return new WP_Error('stripe_error', $e->getMessage(), array('status' => 500));
+    }
 }
 
 
@@ -465,6 +630,56 @@ function src_child_registration_form()
     ];
 
     ob_start(); ?>
+    <style>
+        .child-form {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .child-form h4 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .child-form .wp-block-columns {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .child-form .wp-block-column {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px;
+        }
+        .child-form label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .child-form input,
+        .child-form select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        .child-form button {
+            width: 100%;
+            padding: 10px;
+            background:rgb(229, 15, 4);
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .child-form button:hover {
+            background:rgb(224, 10, 10);
+        }
+    </style>
     <form id="child-registration-form" method="POST" class="wp-block-group child-form">
         <div class="wp-block-columns">
             <div class="wp-block-column">
@@ -670,7 +885,7 @@ function display_report_cards()
         foreach ($report_cards as $report) {
             $report_date = !empty($report->report_date) ? esc_html($report->report_date) : 'N/A';
 
-            echo "<tr>
+     echo "<tr>
                 <td>{$report_date}</td>
                 <td><a href='" . esc_url(get_permalink(get_page_by_path('report-card-view')) . "?report_id={$report->report_id}") . "' target='_blank' class='button'>View & Print</a></td>
                 <td>
@@ -833,7 +1048,7 @@ add_action('wp_footer', 'inject_report_card_data');
                 <td style='padding: 10px; border: 1px solid #ddd; background-color: $current_color; color: white; font-weight: bold;'>". strtoupper($current_grade) ."</td>
                 <td style='padding: 10px; border: 1px solid #ddd; background-color: $previous_color; color: white; font-weight: bold;'>". strtoupper($previous_grade) ."</td>
                 <td style='padding: 10px; border: 1px solid #ddd; background-color: $average_color; color: white; font-weight: bold;'>". strtoupper($average_grade) ."</td>
-                <td style='padding: 10px; border: 1px solid #ddd;'>$current_comment</td>
+                <td class='current-comment' style='padding: 10px; border: 1px solid #ddd;'>$current_comment</td>
             </tr>";
         }
     
@@ -1018,47 +1233,6 @@ add_shortcode('src_registered_parents', 'src_get_registered_parents');
 function forgot_password_form() {
     ob_start();
     ?>
-    <style>
-        .forgot-password-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .forgot-password-form {
-            background: #f9f9f9;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            width: 300px;
-        }
-        .forgot-password-form label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-        }
-        .forgot-password-form input {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 12px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        .forgot-password-form button {
-            width: 100%;
-            padding: 10px;
-            background: #0073aa;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .forgot-password-form button:hover {
-            background: #005f8d;
-        }
-    </style>
     <div class="forgot-password-container">
         <form class="forgot-password-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
             <input type="hidden" name="action" value="forgot_password">
@@ -1080,6 +1254,53 @@ function password_reset_form() {
 
     ob_start();
     ?>
+<style>
+        .password-reset-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* Full viewport height */
+            background-color: #f9f9f9; /* Light background color */
+        }
+
+        .password-reset-form {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 300px;
+        }
+
+        .password-reset-form label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .password-reset-form input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .password-reset-form button {
+            width: 100%;
+            padding: 10px;
+            background: #e50f04; /* Red background color */
+            color: #fff; /* White text color */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .password-reset-form button:hover {
+            background: #d10a0a; /* Darker red on hover */
+        }
+    </style>
     <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
         <input type="hidden" name="action" value="reset_password">
         <input type="hidden" name="key" value="<?php echo esc_attr($_GET['key']); ?>">
@@ -1127,7 +1348,10 @@ function handle_forgot_password() {
             $message .= "Thanks,\n";
             $message .= "Santa Report Card Team";
 
-            wp_mail($user->email, $subject, $message);
+            // Set the headers to include the custom "From" name and email address
+            $headers = array('Content-Type: text/html; charset=UTF-8', 'From: Santa Report Card <no-reply@santareportcard.com>');
+
+            wp_mail($user->email, $subject, $message, $headers);
 
             // Redirect to a confirmation page
             wp_redirect(home_url('/passwordresetconfirmation'));
@@ -1170,6 +1394,42 @@ function handle_password_reset() {
         }
     }
 }
+
+// Handle the contact form submission
+function handle_contact_form_submission() {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'submit_contact_form') {
+        $first_name = sanitize_text_field($_POST['first-name']);
+        $last_name = sanitize_text_field($_POST['last-name']);
+        $email = sanitize_email($_POST['email']);
+        $phone = sanitize_text_field($_POST['phone']);
+        $contact_methods = isset($_POST['contact-method']) ? array_map('sanitize_text_field', $_POST['contact-method']) : [];
+        $contact_time = isset($_POST['contact-time']) ? sanitize_text_field($_POST['contact-time']) : '';
+        $help = sanitize_textarea_field($_POST['help']);
+
+        $to = 'info@santareportcard.com';
+        $subject = 'New Contact Form Submission';
+        $message = "First Name: $first_name\n";
+        $message .= "Last Name: $last_name\n";
+        $message .= "Email: $email\n";
+        $message .= "Phone: $phone\n";
+        $message .= "Preferred Contact Methods: " . implode(', ', $contact_methods) . "\n";
+        $message .= "Preferred Contact Time: $contact_time\n";
+        $message .= "Message: $help\n";
+
+        $headers = array('Content-Type: text/plain; charset=UTF-8', 'From: Santa Report Card <no-reply@santareportcard.com>');
+
+        if (wp_mail($to, $subject, $message, $headers)) {
+            // Redirect to a thank you page or display a success message
+            wp_redirect(home_url('/thank-you'));
+            exit;
+        } else {
+            // Handle the error
+            wp_redirect(home_url('/contact-error'));
+            exit;
+        }
+    }
+}
+add_action('init', 'handle_contact_form_submission');
 add_action('admin_post_nopriv_reset_password', 'handle_password_reset');
 add_action('admin_post_reset_password', 'handle_password_reset');
 function enqueue_dashboard_scripts()

@@ -16,8 +16,7 @@ body {
   line-height: 1.6;
 }
 
-.wp-block-group {
-  max-width: 900px;
+.wp-block-group {  
   margin: 2rem auto;
   background-color: var(--snow-white);
   border-radius: 20px;
@@ -103,6 +102,11 @@ h3.wp-block-heading {
   background-color: var(--santa-green);
   color: var(--snow-white);
   font-weight: bold;
+}
+
+.current-comment{
+	font-size:12px;
+	width:300px;
 }
 
 .report-comments {

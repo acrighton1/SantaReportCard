@@ -317,7 +317,7 @@ nav {
       flex-direction: column;
     }
     .wp-block-image img {
-      width: 100%;
+      width: 300px;
       max-width: 100%;
       height: auto;
     }
@@ -348,6 +348,11 @@ nav {
       padding: 2rem 1rem;
     }
   }
+.stripe-card-image {
+    max-width: 100%;
+    width:100px;
+	height:auto;
+    margin-bottom: 20px; /* Space between the image and the Stripe Card Element */
+}
 
-  
-  
+

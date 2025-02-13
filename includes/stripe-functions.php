@@ -14,26 +14,43 @@ Stripe::setApiKey($stripe_secret_key);
 /**
  * Create a Stripe checkout session
  */
-// Add this to stripe-functions.php
-function create_stripe_checkout_session($membership_type) {
-    \Stripe\Stripe::setApiKey('sk_test_51QqQq02Melw1opnFbHe4SAAbuvv8FCtySqEZGJBLZYVil8XpMFRnEK3cQA2IbnT30nqCLqP1K9iApRNl5YLd4CU400Dj8MKHhd'); // Use your secret Stripe key
+function create_stripe_checkout_session($membership_type, $promotion_code = null) {
+    \Stripe\Stripe::setApiKey('sk_test_51QqQq02Melw1opnFbHe4SAAbuvv8FCtySqEZGJBLZYVil8XpMFRnEK3cQA2IbnT30nqCLqP1K9iApRNl5YLd4CU400Dj8MKHhd');
 
     // Determine price ID based on membership type
-    $price_id = $membership_type === 'premium' ? 'price_1QqQsD2Melw1opnFkWLZzcDe' : 'basic_price_id';
+    $price_id = ($membership_type === 'premium') ? 'price_1QqQsD2Melw1opnFkWLZzcDe' : 'price_1QrzvQ2Melw1opnF2nvqQ2gM';
 
-    // Create a Stripe Checkout session
-    $session = \Stripe\Checkout\Session::create([
+    // Prepare discount array if a promotion code is provided
+    $discounts = [];
+    if ($promotion_code) {
+        try {
+            $promo = \Stripe\PromotionCode::retrieve($promotion_code);
+            if ($promo && $promo->active) {
+                $discounts[] = ['promotion_code' => $promo->id];
+            }
+        } catch (\Exception $e) {
+            error_log('Invalid Promotion Code: ' . $e->getMessage());
+        }
+    }
+
+    // Create Stripe Checkout session
+    $session_data = [
         'payment_method_types' => ['card'],
-        'line_items' => [
-            [
-                'price' => $price_id,
-                'quantity' => 1,
-            ],
-        ],
-        'mode' => 'subscription', // Use 'payment' for one-time payments
+        'line_items' => [[
+            'price' => $price_id,
+            'quantity' => 1,
+        ]],
+        'mode' => 'subscription',
         'success_url' => home_url('/payment-success?session_id={CHECKOUT_SESSION_ID}'),
         'cancel_url' => home_url('/payment-cancel'),
-    ]);
+    ];
+
+    // Add discounts if applicable
+    if (!empty($discounts)) {
+        $session_data['discounts'] = $discounts;
+    }
+
+    $session = \Stripe\Checkout\Session::create($session_data);
 
     return $session->url;
 }

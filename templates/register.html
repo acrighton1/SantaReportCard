@@ -56,7 +56,7 @@
                     <option value="premium" selected>Premium Membership</option>
                 </select>
             </div>
-            <p class="total-cost">Total Cost: <span id="membership-cost">$10.99/year</span></p>
+            <p class="total-cost">Total Cost: <span id="membership-cost">$29.99/year</span></p>
             <div class="form-group">
                 <!-- Stripe Card Element -->
                 <div id="card-element">
@@ -69,22 +69,60 @@
     document.addEventListener("DOMContentLoaded", function() {
         const membershipSelect = document.getElementById("membership-type");
         const membershipCost = document.getElementById("membership-cost");
-  
-        // Define prices
-        const prices = {
-            basic: "$10.99/year",
-            premium: "$29.99/year"
-        };
-  
-        // Update price when selection changes
-        membershipSelect.addEventListener("change", function() {
+        const referralCodeInput = document.getElementById("referral_code");
+
+        let prices = {};
+        let promotionCodes = {};
+
+        // Fetch prices from the custom endpoint
+        fetch('/wp-json/santa-report-card/v1/prices')
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(price => {
+                    if (price.nickname === 'Basic Membership') {
+                        prices.basic = price.unit_amount / 100;
+                    } else if (price.nickname === 'Premium Membership') {
+                        prices.premium = price.unit_amount / 100;
+                    }
+                });
+
+                // Set initial price
+                updatePrice();
+            })
+            .catch(error => console.error('Error fetching prices:', error));
+
+        // Fetch promotion codes from the custom endpoint
+        fetch('/wp-json/santa-report-card/v1/promotion-codes')
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(promo => {
+                    promotionCodes[promo.code] = promo.coupon.percent_off;
+                });
+                console.log('Promotion codes:', promotionCodes); // Debugging log
+            })
+            .catch(error => console.error('Error fetching promotion codes:', error));
+
+        // Update price when membership type or referral code changes
+        membershipSelect.addEventListener("change", updatePrice);
+        referralCodeInput.addEventListener("input", updatePrice);
+
+        function updatePrice() {
             const selectedValue = membershipSelect.value;
-            membershipCost.textContent = prices[selectedValue];
-        });
+            let price = prices[selectedValue];
+            console.log('Selected membership:', selectedValue, 'Price:', price); // Debugging log
+
+            const referralCode = referralCodeInput.value.trim();
+            if (promotionCodes[referralCode]) {
+                const discount = promotionCodes[referralCode];
+                price = price - (price * (discount / 100));
+                console.log('Referral code applied:', referralCode, 'Discount:', discount, 'New price:', price); // Debugging log
+            }
+
+            membershipCost.textContent = `$${price.toFixed(2)}/year`;
+        }
     });
   </script>
   <!-- /wp:html -->
-  
   
   <script src="https://js.stripe.com/v3/"></script>
   <script>
@@ -122,7 +160,6 @@
         });
     });
   </script>
-  
   
   </div>
   <!-- /wp:group -->
