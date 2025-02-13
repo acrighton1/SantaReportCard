@@ -420,7 +420,7 @@ if ($coupon_id) {
         $message = "Hi {$full_name},\n\n";
         $message .= "Thank you for registering and subscribing to our service. We are excited to have you on board!\n\n";
         if ($referral_code) {
-            $message .= "You used the referral code: {$referral_code}.\n\n";
+            $message .= "You used the referral code: {$referral_code}. Your discount has been applied.\n\n";
         }
         $message .= "If you have any questions, feel free to contact us.\n\n";
         $message .= "Thanks,\n";
