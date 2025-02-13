@@ -1,230 +1,243 @@
+<!-- wp:generateblocks/image {"uniqueId":"b79c33b2","sizeSlug":"full","blockVersion":2} /-->
+
 <!-- wp:template-part {"slug":"header","theme":"santareportcard","area":"header"} /-->
+
 <!-- wp:group {"align":"wide","className":"registration-container"} -->
 <div class="wp-block-group registration-container">
-  <!-- wp:html -->
-  <div class="container">
-    <div class="info-section">
-        <h1>Membership Sign Up</h1>
-        <p class="subtitle">Becoming a member is FAST, EASY and AFFORDABLE!</p>
-        <p>For the price of a lunch or dinner at a fast-food restaurant, you can invest in your children!</p>
-        <p>Your annual membership is paid once per year and is automatically renewed at the same price for as long
-            as you remain an active member. So, you're protected against any future price changes, but you get all
-            the new features!</p>
-        <p class="highlight">Early Bird Special….only $29.99 (normally $59.99) for a limited time only!</p>
-        <p>Once you've become a member, you can register your children (no limit) and get started working toward
-            your first report card!</p>
-        <h2>Your Annual Membership Includes:</h2>
-        <ul>
-            <li>Access to our proprietary Santa Report Card grading system</li>
-            <li>Ability to print monthly report cards for each child (no limit)</li>
-            <li>Access to all future updates, enhancements, and improvements</li>
-            <li>Access to a private member group to connect with other members (in process)</li>
-            <li>Locked in price (you pay the same rate you initially registered at when renewing in future years)
-            </li>
-            <li>Special promotions, offers and discounts for members only</li>
-        </ul>
-        <p class="highlight">Making a difference! We donate a portion of every membership to helping less fortunate
-            families during Christmas.</p>
-    </div>
-    <div class="form-section">
-        <h2>Parent Registration</h2>
-        <form id="registration-form" method="POST">
-            <div class="form-group">
-                <label for="full_name">Full Name</label>
-                <input type="text" id="full_name" name="full_name" required>
-            </div>
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            <div class="form-group">
-                <label for="confirm_password">Re-enter Password</label>
-                <input type="password" id="confirm_password" name="confirm_password" required>
-            </div>
-            <div class="form-group">
-                <label for="referral_code">Referral Code (Optional)</label>
-                <input type="text" id="referral_code" name="referral_code">
-            </div>
-            <div class="form-group">
-                <label for="membership-type">Membership Type</label>
-                <select id="membership-type" name="membership_type" required>
-                    <option value="basic">Basic Membership</option>
-                    <option value="premium" selected>Premium Membership</option>
-                </select>
-            </div>
-            <p class="total-cost">Total Cost: <span id="membership-cost">$29.99/year</span></p>
-            <div class="form-group">
-                <!-- Stripe Card Element -->
-                <div id="card-element">
-                    <!-- A Stripe Element will be inserted here. -->
+  
+    <!-- wp:html -->
+    <div class="container">
+        <div class="info-section">
+            <h1>Membership Sign Up</h1>
+            <p class="subtitle">Becoming a member is FAST, EASY and AFFORDABLE!</p>
+            <p>For the price of a lunch or dinner at a fast-food restaurant, you can invest in your children!</p>
+            <p>Your annual membership is paid once per year and is automatically renewed at the same price for as long
+                as you remain an active member. So, you're protected against any future price changes, but you get all
+                the new features!</p>
+            <p class="highlight">Early Bird Special….only $29.99 (normally $59.99) for a limited time only!</p>
+            <p>Once you've become a member, you can register your children (no limit) and get started working toward
+                your first report card!</p>
+            <h2>Your Annual Membership Includes:</h2>
+            <ul>
+                <li>Access to our proprietary Santa Report Card grading system</li>
+                <li>Ability to print monthly report cards for each child (no limit)</li>
+                <li>Access to all future updates, enhancements, and improvements</li>
+                <li>Access to a private member group to connect with other members (in process)</li>
+                <li>Locked in price (you pay the same rate you initially registered at when renewing in future years)
+                </li>
+                <li>Special promotions, offers and discounts for members only</li>
+            </ul>
+            <p class="highlight">Making a difference! We donate a portion of every membership to helping less fortunate
+                families during Christmas.</p>
+        </div>
+        <div class="form-section">
+            <h2>Parent Registration</h2>
+            <form id="registration-form" method="POST">
+                <div class="form-group">
+                    <label for="full_name">Full Name</label>
+                    <input type="text" id="full_name" name="full_name" required>
                 </div>
-                <button type="submit" id="submit-button">Register</button>
-        </form>
-  
-  <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const membershipSelect = document.getElementById("membership-type");
-        const membershipCost = document.getElementById("membership-cost");
-  
-        // Define prices
-        const prices = {
-            basic: "$10.99/year",
-            premium: "$29.99/year"
-        };
-  
-        // Update price when selection changes
-        membershipSelect.addEventListener("change", function() {
-            const selectedValue = membershipSelect.value;
-            membershipCost.textContent = prices[selectedValue];
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirm_password">Re-enter Password</label>
+                    <input type="password" id="confirm_password" name="confirm_password" required>
+                </div>
+                <div class="form-group">
+                    <label for="referral_code">Referral Code (Optional)</label>
+                    <input type="text" id="referral_code" name="referral_code">
+                </div>
+                <div class="form-group">
+                    <label for="membership-type">Membership Type</label>
+                    <select id="membership-type" name="membership_type" required>
+                        <option value="basic">Basic Membership</option>
+                        <option value="premium" selected>Premium Membership</option>
+                    </select>
+                </div>
+                <p class="total-cost">Total Cost: <span id="membership-cost">$29.99/year</span></p>
+                <div class="form-group">
+                    <!-- Stripe Card Element -->
+                    <div id="card-element">
+                        <!-- A Stripe Element will be inserted here. -->
+                    </div>
+    <!-- Add your image here -->
+        <img src="https://cdn.brandfolder.io/KGT2DTA4/at/rvgw5pc69nhv9wkh7rw8ckv/Powered_by_Stripe_-_blurple.svg" alt="Description of Image" class="stripe-card-image">
+    
+                    <button type="submit" id="submit-button">Register</button>
+            </form>
+      
+      <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const membershipSelect = document.getElementById("membership-type");
+            const membershipCost = document.getElementById("membership-cost");
+      
+            // Define prices
+            const prices = {
+                basic: "$10.99/year",
+                premium: "$29.99/year"
+            };
+      
+            // Update price when selection changes
+            membershipSelect.addEventListener("change", function() {
+                const selectedValue = membershipSelect.value;
+                membershipCost.textContent = prices[selectedValue];
+            });
         });
-    });
-  </script>
-  <!-- /wp:html -->
-  
-  
-  <script src="https://js.stripe.com/v3/"></script>
-  <script>
-    // Set your Stripe publishable key
-    var stripe = Stripe('pk_test_51QqQq02Melw1opnFyvnDrCtwfdK0CmBbWoJB6bIavc56rrvB5S3hB0KsyH2wBT4fLd8AOc0o7DUW9DWZU6ApUUKT00ABWika6X');  // Replace with your Stripe publishable key
-    var elements = stripe.elements();
-    var card = elements.create('card');
-    card.mount('#card-element');
-  
-    // Handle form submission
-    var form = document.getElementById('registration-form');
-    form.addEventListener('submit', function (event) {
-        event.preventDefault();
-  
-        // Create payment method
-        stripe.createPaymentMethod({
-            type: 'card',
-            card: card,
-        }).then(function(result) {
-            if (result.error) {
-                // Display error to the user
-                document.getElementById('card-errors').textContent = result.error.message;
-            } else {
-                // Attach the payment method ID to the form data
-                var paymentMethodId = result.paymentMethod.id;
-                var hiddenPaymentMethodInput = document.createElement('input');
-                hiddenPaymentMethodInput.setAttribute('type', 'hidden');
-                hiddenPaymentMethodInput.setAttribute('name', 'payment_method_id');
-                hiddenPaymentMethodInput.setAttribute('value', paymentMethodId);
-                form.appendChild(hiddenPaymentMethodInput);
-  
-                // Submit the form after attaching payment method ID
-                form.submit();
-            }
+      </script>
+    <!-- /wp:html -->
+      
+      
+      <script src="https://js.stripe.com/v3/"></script>
+      <script>
+        // Set your Stripe publishable key
+        var stripe = Stripe('pk_test_51QqQq02Melw1opnFyvnDrCtwfdK0CmBbWoJB6bIavc56rrvB5S3hB0KsyH2wBT4fLd8AOc0o7DUW9DWZU6ApUUKT00ABWika6X');  // Replace with your Stripe publishable key
+        var elements = stripe.elements();
+        var card = elements.create('card');
+        card.mount('#card-element');
+      
+        // Handle form submission
+        var form = document.getElementById('registration-form');
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+      
+            // Create payment method
+            stripe.createPaymentMethod({
+                type: 'card',
+                card: card,
+            }).then(function(result) {
+                if (result.error) {
+                    // Display error to the user
+                    document.getElementById('card-errors').textContent = result.error.message;
+                } else {
+                    // Attach the payment method ID to the form data
+                    var paymentMethodId = result.paymentMethod.id;
+                    var hiddenPaymentMethodInput = document.createElement('input');
+                    hiddenPaymentMethodInput.setAttribute('type', 'hidden');
+                    hiddenPaymentMethodInput.setAttribute('name', 'payment_method_id');
+                    hiddenPaymentMethodInput.setAttribute('value', paymentMethodId);
+                    form.appendChild(hiddenPaymentMethodInput);
+      
+                    // Submit the form after attaching payment method ID
+                    form.submit();
+                }
+            });
         });
-    });
-  </script>
-  
-  
-  </div>
-  <!-- /wp:group -->
-  
-  <!-- wp:style -->
-  <style>
-    body {
-          font-family: Arial, sans-serif;
-          line-height: 1.6;
-          color: #333;
-          margin: 0;
-          padding: 0;
-          background-color: #f4f4f4;
-      }
-  
-      .container {
-          display: flex;
-          max-width: 1200px;
-          margin: 2rem auto;
-          background-color: #fff;
-          box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      }
-  
-      .info-section,
-      .form-section {
-          padding: 2rem;
-          flex: 1;
-      }
-  
-      .info-section {
-          background-color: #f9f9f9;
-      }
-  
-      h1,
-      h2 {
-          color: #2c3e50;
-      }
-  
-      .subtitle {
-          font-style: italic;
-          color: #7f8c8d;
-      }
-  
-      .highlight {
-          font-weight: bold;
-          color: #e74c3c;
-      }
-  
-      ul {
-          padding-left: 1.5rem;
-      }
-  
-      .form-group {
-          margin-bottom: 1rem;
-      }
-  
-      label {
-          display: block;
-          margin-bottom: 0.5rem;
-      }
-  
-      input,
-      select {
-          width: 100%;
-          padding: 0.5rem;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-      }
-  
-      .form-row {
-          display: flex;
-          gap: 1rem;
-      }
-  
-      .form-row .form-group {
-          flex: 1;
-      }
-  
-      .total-cost {
-          font-weight: bold;
-          margin: 1rem 0;
-      }
-  
-      button {
-          background-color: #3498db;
-          color: #fff;
-          padding: 0.75rem 1rem;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 1rem;
-          width: 100%;
-      }
-  
-      button:hover {
-          background-color: #2980b9;
-      }
-  
-      @media (max-width: 768px) {
-          .container {
-              flex-direction: column;
+      </script>
+      
+      
+      </div>
+    <!-- /wp:group -->
+    
+    <!-- wp:style -->
+    <style>
+        body {
+              font-family: Arial, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              margin: 0;
+              padding: 0;
+              background-color: #f4f4f4;
           }
-      }
-  </style>
-  <!-- /wp:style -->
+      
+          .container {
+              display: flex;
+              max-width: 1200px;
+              margin: 2rem auto;
+              background-color: #fff;
+              box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+          }
+      
+          .info-section,
+          .form-section {
+              padding: 2rem;
+              flex: 1;
+          }
+      
+          .info-section {
+              background-color: #f9f9f9;
+          }
+      
+          h1,
+          h2 {
+              color: #2c3e50;
+          }
+      
+          .subtitle {
+              font-style: italic;
+              color: #7f8c8d;
+          }
+      
+          .highlight {
+              font-weight: bold;
+              color: #e74c3c;
+          }
+      
+          ul {
+              padding-left: 1.5rem;
+          }
+      
+          .form-group {
+              margin-bottom: 1rem;
+          }
+      
+          label {
+              display: block;
+              margin-bottom: 0.5rem;
+          }
+      
+          input,
+          select {
+              width: 100%;
+              padding: 0.5rem;
+              border: 1px solid #ddd;
+              border-radius: 4px;
+          }
+      
+          .form-row {
+              display: flex;
+              gap: 1rem;
+          }
+      
+          .form-row .form-group {
+              flex: 1;
+          }
+      
+          .total-cost {
+              font-weight: bold;
+              margin: 1rem 0;
+          }
+      
+          button {
+              background-color: #3498db;
+              color: #fff;
+              padding: 0.75rem 1rem;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+              font-size: 1rem;
+              width: 100%;
+          }
+      
+          button:hover {
+              background-color: #2980b9;
+          }
+      
+          @media (max-width: 768px) {
+              .container {
+                  flex-direction: column;
+              }
+          }
+    .stripe-card-image {
+        max-width: 100%;
+        width:150px;
+        height:auto;
+        margin-bottom: 20px; /* Space between the image and the Stripe Card Element */
+    }
+      </style>
+    <!-- /wp:style -->
