@@ -336,27 +336,35 @@ function create_stripe_customer_and_subscription($parent_id, $parent_email, $ful
 
  /////////Stripe Registration Coupon Code///////////
 /////////Stripe Registration Coupon Code///////////
-$coupon_id = null;
-$coupon_metadata = null;  // Variable to store coupon metadata
-
-// Check if a referral code was provided
+/////////Stripe Registration Coupon Code///////////
 if (!empty($referral_code)) {
     try {
-        error_log("Trying to retrieve promotion code: " . $referral_code); // Log the actual referral code
-        $promo = \Stripe\Coupon::retrieve($referral_code); // Use $referral_code instead of $coupon_id
-        error_log("Retrieved promotion code object: " . print_r($promo, true));
+        error_log("Trying to retrieve promotion code: " . $referral_code);
 
-        if ($promo && $promo->active && $promo->coupon) {  // Check if promo exists, is active, AND has a coupon
-            error_log("Applying coupon: " . $promo->coupon->id);
-            $coupon_id = $promo->coupon->id;
-            $coupon_metadata = $promo->coupon->metadata;  // Store coupon metadata
+        // Retrieve the promotion code by its code (not ID)
+        $promo = \Stripe\PromotionCode::all([
+            'code' => $referral_code,
+            'limit' => 1
+        ]);
+
+        if (!empty($promo->data)) {
+            $promo = $promo->data[0]; // Get the first matching promotion code
+            error_log("Retrieved promotion code object: " . print_r($promo, true));
+
+            if ($promo && $promo->active && $promo->coupon) {
+                error_log("Applying coupon: " . $promo->coupon->id);
+                $coupon_id = $promo->coupon->id;
+                $coupon_metadata = $promo->coupon->metadata;  // Store coupon metadata
+            } else {
+                error_log("Promotion code not found, not active, or no associated coupon: " . $referral_code);
+            }
         } else {
-            error_log("Promotion code not found, not active, or no associated coupon: " . $referral_code);
+            error_log("No promotion code found for: " . $referral_code);
         }
-    } catch (\Stripe\Exception\InvalidPromotionCode $e) {
-        error_log('Invalid Promotion Code: ' . $e->getMessage() . " Code: " . $referral_code);
-    } catch (\Exception $e) {
+    } catch (\Stripe\Exception\InvalidRequestException $e) {
         error_log('Stripe Error: ' . $e->getMessage());
+    } catch (\Exception $e) {
+        error_log('Error: ' . $e->getMessage());
     }
 } else {
     error_log("No referral code provided, skipping coupon logic.");
