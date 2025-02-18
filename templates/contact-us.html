@@ -1,0 +1,60 @@
+<!-- wp:template-part {"slug":"main-header"} /-->
+
+<div class="contact-us-section">
+  <div class="container">
+    <h1 class="contact-us-title">Get in Touch with Us!</h1>
+    <p class="contact-us-description">We’d love to hear from you! Please fill out the form below and we’ll get back to you as soon as possible.</p>
+
+    <!-- Contact Form -->
+    <form class="contact-form" action="" method="POST">
+      <input type="hidden" name="action" value="submit_contact_form">
+      <div class="form-group">
+        <label for="first-name">First Name *</label>
+        <input type="text" id="first-name" name="first-name" placeholder="Enter your first name" required>
+      </div>
+
+      <div class="form-group">
+        <label for="last-name">Last Name *</label>
+        <input type="text" id="last-name" name="last-name" placeholder="Enter your last name" required>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email Address *</label>
+        <input type="email" id="email" name="email" placeholder="Enter your email address" required>
+      </div>
+
+      <div class="form-group">
+        <label for="phone">Phone Number (including country code; default to +1) *</label>
+        <input type="tel" id="phone" name="phone" placeholder="Enter your phone number" required pattern="^\+?\d{1,4}?\d{7,15}$">
+      </div>
+
+      <div class="form-group">
+        <label>Please contact me by *</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" name="contact-method[]" value="phone" required> Phone (must include phone number)</label>
+          <label><input type="checkbox" name="contact-method[]" value="email" required> Email</label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="contact-time">Please contact me in the (phone calls only):</label>
+        <div class="radio-group">
+          <label><input type="radio" name="contact-time" value="mornings"> Mornings</label>
+          <label><input type="radio" name="contact-time" value="afternoons"> Afternoons</label>
+          <label><input type="radio" name="contact-time" value="evenings"> Evenings</label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="help">What can we help you with? *</label>
+        <textarea id="help" name="help" placeholder="Write your message here" rows="5" required></textarea>
+      </div>
+
+      <button type="submit" class="submit-button">Submit</button>
+    </form>
+    <!-- End of Contact Form -->
+
+  </div>
+</div>
+
+<!-- wp:template-part {"slug":"footer"} /-->
