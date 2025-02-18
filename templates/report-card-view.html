@@ -1,48 +1,102 @@
-<!-- wp:group {"align":"full","style":{"spacing":{"padding":{"top":"20px","bottom":"20px"}}}} -->
-<div class="wp-block-group">
-    <h1 class="wp-block-heading">Official Santa Report Card for<br><span class="child-name"></span></h1>
-    <p><strong>Date:</strong> <span class="report-date"></span></p>
+<!-- wp:group {"align":"full","style":{"spacing":{"padding":{"top":"20px","bottom":"20px"}}},"className":"report-card-container"} -->
+<div class="wp-block-group report-card-container">
+    <h1 class="wp-block-heading has-text-align-center">
+        Official Santa Report Card for<br><span class="child-name"></span>
+    </h1>
+    <p class="has-text-align-center"><strong>Date:</strong> <span class="report-date"></span></p>
 
-    <h3 class="wp-block-heading">Grading Summary</h3>
+    <h3 class="wp-block-heading has-text-align-center">Grading Summary</h3>
     <div class="report-card-table"></div>
 
-    <h3 class="wp-block-heading">Other Comments</h3>
-    <p class="report-comments"></p>
+    <h3 class="wp-block-heading has-text-align-center">Other Comments</h3>
+    <p class="report-comments has-text-align-center"></p>
 
-    <div class="wp-block-group signature-section">
+    <div class="wp-block-group signature-section has-text-align-center">
         <p>Reviewed with Santa<br>Certified by:</p>
         <p class="text-2xl italic">Mr. Kringles</p>
         <p class="text-sm italic">Head Elf, Santa's Report Card (Dasher Region)</p>
     </div>
 
-    <p class="has-text-align-center">Remember, he sees you when you're sleeping, he knows when you're awake, he knows
-        when you've been bad or good. So...be good for goodness' sake!</p>
-        <p class="has-text-align-center font-bold" id="countdown"></p>
-    <script>
-        function calculateDaysUntilChristmas() {
-            const today = new Date();
-            const currentYear = today.getFullYear();
-            const christmasDate = new Date(currentYear, 11, 25); // December 25th
-    
-            // If Christmas has already passed this year, calculate for next year
-            if (today > christmasDate) {
-                christmasDate.setFullYear(currentYear + 1);
-            }
-    
-            const oneDay = 24 * 60 * 60 * 1000; // Hours * minutes * seconds * milliseconds
-            const daysUntilChristmas = Math.round((christmasDate - today) / oneDay);
-    
-            return daysUntilChristmas;
-        }
-    
-        document.addEventListener('DOMContentLoaded', function() {
-            const countdownElement = document.getElementById('countdown');
-            const daysUntilChristmas = calculateDaysUntilChristmas();
-            countdownElement.textContent = `Only ${daysUntilChristmas} days until Christmas!`;
-        });
-    </script>
+    <p class="has-text-align-center reminder-text">
+        Remember, he sees you when you're sleeping, he knows when you're awake, he knows
+        when you've been bad or good. So...be good for goodness' sake!
+    </p>
+    <p class="has-text-align-center font-bold countdown-text" id="countdown"></p>
 
-    <div class="wp-block-button print-btn">
+    <div class="wp-block-button print-btn has-text-align-center">
         <button onclick="window.print()">Print Report Card</button>
     </div>
 </div>
+<!-- /wp:group -->
+
+<style>
+    .report-card-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .report-card-table {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .signature-section p {
+        margin: 5px 0;
+    }
+
+    .print-btn button {
+        background-color: #d32f2f;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        font-size: 16px;
+        border-radius: 5px;
+        cursor: pointer;
+        width: 100%;
+        max-width: 250px;
+    }
+
+    .print-btn {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+    }
+
+    @media screen and (max-width: 600px) {
+        .wp-block-heading {
+            font-size: 1.5em;
+        }
+
+        .text-2xl {
+            font-size: 1.25em;
+        }
+
+        .text-sm {
+            font-size: 0.85em;
+        }
+
+        .print-btn button {
+            width: 100%;
+        }
+    }
+</style>
+
+<script>
+    function calculateDaysUntilChristmas() {
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const christmasDate = new Date(currentYear, 11, 25);
+
+        if (today > christmasDate) {
+            christmasDate.setFullYear(currentYear + 1);
+        }
+
+        const oneDay = 24 * 60 * 60 * 1000;
+        return Math.round((christmasDate - today) / oneDay);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('countdown').textContent = `Only ${calculateDaysUntilChristmas()} days until Christmas!`;
+    });
+</script>

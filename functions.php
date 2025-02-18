@@ -45,15 +45,15 @@ function twentytwentyfive_child_enqueue_styles()
         );
     }
 
-        // Enqueue report-card-style.css on the report card page
-        if (is_page('register')) { // Adjust 'report-card-view' to match your actual report card page slug
-            wp_enqueue_style(
-                'parentregistration',
-                get_stylesheet_directory_uri() . '/assets/parentregistration.css',
-                array('parent-style'),
-                filemtime(get_stylesheet_directory() . '/assets/parentregistration.css') // Prevents caching issues
-            );
-        }
+    // Enqueue report-card-style.css on the report card page
+    if (is_page('register')) { // Adjust 'report-card-view' to match your actual report card page slug
+        wp_enqueue_style(
+            'parentregistration',
+            get_stylesheet_directory_uri() . '/assets/parentregistration.css',
+            array('parent-style'),
+            filemtime(get_stylesheet_directory() . '/assets/parentregistration.css') // Prevents caching issues
+        );
+    }
 
     // Ensure report-card-style.css is applied for both screen and print
     if (is_page('report-card-view')) {
@@ -66,39 +66,57 @@ function twentytwentyfive_child_enqueue_styles()
         );
     }
 
-        // Ensure report-card-style.css is applied for both screen and print
-        if (is_page('reportcard')) {
-            wp_enqueue_style(
-                'report-card-form',
-                get_stylesheet_directory_uri() . '/assets/report-card-form.css',
-                array(),
-                filemtime(get_stylesheet_directory() . '/assets/report-card-form.css'),
-                'all' // This ensures styles apply to both screen and print
-            );
+    // Ensure report-card-style.css is applied for both screen and print
+    if (is_page('reportcard')) {
+        wp_enqueue_style(
+            'report-card-form',
+            get_stylesheet_directory_uri() . '/assets/report-card-form.css',
+            array(),
+            filemtime(get_stylesheet_directory() . '/assets/report-card-form.css'),
+            'all' // This ensures styles apply to both screen and print
+        );
+    }
+
+    // Ensure report-card-style.css is applied for both screen and print
+    if (is_page('contact-us')) {
+        wp_enqueue_style(
+            'contactus',
+            get_stylesheet_directory_uri() . '/assets/contactus.css',
+            array(),
+            filemtime(get_stylesheet_directory() . '/assets/contactus.css'),
+            'all' // This ensures styles apply to both screen and print
+        );
+    }
+
+    // Ensure report-card-style.css is applied for both screen and print
+    if (is_page('how-it-works')) {
+        wp_enqueue_style(
+            'howitworks',
+            get_stylesheet_directory_uri() . '/assets/howitworks.css',
+            array(),
+            filemtime(get_stylesheet_directory() . '/assets/howitworks.css'),
+            'all' // This ensures styles apply to both screen and print
+        );
+    }
+    // Add this function to enqueue necessary scripts
+    function enqueue_registration_scripts()
+    {
+        if (is_page('register')) {  // Adjust this condition based on your page
+            wp_enqueue_script('recaptcha', 'https://www.google.com/recaptcha/api.js', array(), null, true);
+            wp_enqueue_script('stripe', 'https://js.stripe.com/v3/', array(), null, true);
         }
+    }
+    add_action('wp_enqueue_scripts', 'enqueue_registration_scripts');
 
-             // Ensure report-card-style.css is applied for both screen and print
-             if (is_page('contact-us')) {
-                wp_enqueue_style(
-                    'contactus',
-                    get_stylesheet_directory_uri() . '/assets/contactus.css',
-                    array(),
-                    filemtime(get_stylesheet_directory() . '/assets/contactus.css'),
-                    'all' // This ensures styles apply to both screen and print
-                );
-            }
-
-                 // Ensure report-card-style.css is applied for both screen and print
-                 if (is_page('how-it-works')) {
-                    wp_enqueue_style(
-                        'howitworks',
-                        get_stylesheet_directory_uri() . '/assets/howitworks.css',
-                        array(),
-                        filemtime(get_stylesheet_directory() . '/assets/howitworks.css'),
-                        'all' // This ensures styles apply to both screen and print
-                    );
-                }
-    
+    function enqueue_ajax_scripts()
+    {
+        wp_enqueue_script('custom-ajax', get_template_directory_uri() . '/js/custom.js', array('jquery'), null, true);
+        wp_localize_script('custom-ajax', 'ajax_object', array(
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce'    => wp_create_nonce('parent_registration_nonce'),
+        ));
+    }
+    add_action('wp_enqueue_scripts', 'enqueue_ajax_scripts');
 
     // Enqueue custom scripts
     wp_enqueue_script('custom-scripts', get_stylesheet_directory_uri() . '/script.js', array('jquery'), null, true);
@@ -255,6 +273,43 @@ function handle_parent_logout()
 add_action('init', 'handle_parent_logout');
 
 
+
+// Handle Parent Registration////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+function verify_recaptcha($recaptcha_response)
+{
+    $secret_key = '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe';
+
+    $response = wp_remote_post('https://www.google.com/recaptcha/api/siteverify', [
+        'body' => [
+            'secret'   => $secret_key,
+            'response' => $recaptcha_response
+        ]
+    ]);
+
+    if (is_wp_error($response)) {
+        error_log('reCAPTCHA verification failed: ' . $response->get_error_message());
+        return false;
+    }
+
+    $response_data = json_decode(wp_remote_retrieve_body($response), true);
+
+    if (!$response_data || !isset($response_data['success'])) {
+        error_log('Invalid reCAPTCHA response structure');
+        return false;
+    }
+
+    if (!$response_data['success']) {
+        error_log('reCAPTCHA failed. Errors: ' . implode(', ', $response_data['error-codes'] ?? []));
+    }
+
+    return $response_data['success'];
+}
+
+
 // Handle parent registration with Stripe
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
     // Sanitize inputs from the registration form
@@ -268,6 +323,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
     // Check if necessary fields are filled
     if (!empty($email) && !empty($password) && !empty($full_name) && !empty($payment_method_id)) {
         global $wpdb;
+
+
 
         // Insert parent data into the database
         $inserted = $wpdb->insert(
@@ -289,12 +346,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
             // Create Stripe customer and subscription
             create_stripe_customer_and_subscription($parent_id, $email, $full_name, $membership_type, $payment_method_id, $referral_code);
 
+            // First check if this is a POST request with data
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST)) {
+                wp_die('Invalid request method');
+            }
+
+            // Verify nonce if it exists (for form submissions through admin-post.php)
+            if (isset($_POST['registration_nonce'])) {
+                if (!wp_verify_nonce($_POST['registration_nonce'], 'parent_registration_nonce')) {
+                    wp_die('Security check failed');
+                }
+            }
+
+            // Verify reCAPTCHA if it exists
+            if (isset($_POST['g-recaptcha-response'])) {
+                if (!verify_recaptcha($_POST['g-recaptcha-response'])) {
+                    wp_die('reCAPTCHA verification failed');
+                }
+            }
+
             // Redirect to the Thank You page
             wp_redirect(site_url('/thank-you'));
             exit;
         }
     }
 }
+
 
 
 /**
@@ -332,166 +409,125 @@ function create_stripe_customer_and_subscription($parent_id, $parent_email, $ful
     // Select price ID based on membership type
     $price_id = ($membership_type === 'premium') ? 'price_1QrzvQ2Melw1opnF2nvqQ2gM' : 'price_1QrzvQ2Melw1opnF2nvqQ2gM';
 
-    
 
- /////////Stripe Registration Coupon Code///////////
-/////////Stripe Registration Coupon Code///////////
-/////////Stripe Registration Coupon Code///////////
-if (!empty($referral_code)) {
-    try {
-        error_log("Trying to retrieve promotion code: " . $referral_code);
 
-        // Retrieve the promotion code by its code (not ID)
-        $promo = \Stripe\PromotionCode::all([
-            'code' => $referral_code,
-            'limit' => 1
-        ]);
+    /////////Stripe Registration Coupon Code///////////
+    /////////Stripe Registration Coupon Code///////////
+    /////////Stripe Registration Coupon Code///////////
+    if (!empty($referral_code)) {
+        try {
+            error_log("Trying to retrieve promotion code: " . $referral_code);
 
-        if (!empty($promo->data)) {
-            $promo = $promo->data[0]; // Get the first matching promotion code
-            error_log("Retrieved promotion code object: " . print_r($promo, true));
+            // Retrieve the promotion code by its code (not ID)
+            $promo = \Stripe\PromotionCode::all([
+                'code' => $referral_code,
+                'limit' => 1
+            ]);
 
-            if ($promo && $promo->active && $promo->coupon) {
-                error_log("Applying coupon: " . $promo->coupon->id);
-                $coupon_id = $promo->coupon->id;
-                $coupon_metadata = $promo->coupon->metadata;  // Store coupon metadata
+            if (!empty($promo->data)) {
+                $promo = $promo->data[0]; // Get the first matching promotion code
+                error_log("Retrieved promotion code object: " . print_r($promo, true));
+
+                if ($promo && $promo->active && $promo->coupon) {
+                    error_log("Applying coupon: " . $promo->coupon->id);
+                    $coupon_id = $promo->coupon->id;
+                    $coupon_metadata = $promo->coupon->metadata;  // Store coupon metadata
+                } else {
+                    error_log("Promotion code not found, not active, or no associated coupon: " . $referral_code);
+                }
             } else {
-                error_log("Promotion code not found, not active, or no associated coupon: " . $referral_code);
+                error_log("No promotion code found for: " . $referral_code);
             }
-        } else {
-            error_log("No promotion code found for: " . $referral_code);
+        } catch (\Stripe\Exception\InvalidRequestException $e) {
+            error_log('Stripe Error: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            error_log('Error: ' . $e->getMessage());
         }
-    } catch (\Stripe\Exception\InvalidRequestException $e) {
-        error_log('Stripe Error: ' . $e->getMessage());
-    } catch (\Exception $e) {
-        error_log('Error: ' . $e->getMessage());
+    } else {
+        error_log("No referral code provided, skipping coupon logic.");
     }
-} else {
-    error_log("No referral code provided, skipping coupon logic.");
-}
 
-// Only fetch available coupons if no coupon_id was set from the referral code
-if (!$coupon_id && !empty($referral_code)) {
+    // Only fetch available coupons if no coupon_id was set from the referral code
+    if (!$coupon_id && !empty($referral_code)) {
+        try {
+            error_log("Fetching available coupons...");
+            $coupons = \Stripe\Coupon::all(['limit' => 10]); // Limit the number of coupons fetched
+            if (count($coupons->data) > 0) {
+                // Use the first available coupon
+                $coupon_id = $coupons->data[0]->id;
+                $coupon_metadata = $coupons->data[0]->metadata;  // Store metadata of the first coupon
+                error_log("Using available coupon: " . $coupon_id);
+            }
+        } catch (Exception $e) {
+            error_log('Stripe Coupon Fetch Error: ' . $e->getMessage());
+        }
+    }
+
+    // Now you can use the coupon_id and coupon_metadata
+    // For example, you can include coupon metadata in the subscription data
+    $subscription_data = [
+        'customer' => $customer->id,
+        'items' => [['price' => $price_id]], // Attach price
+        'metadata' => [
+            'coupon_metadata' => json_encode($coupon_metadata),  // Store coupon metadata in subscription metadata
+        ],
+    ];
+
+    // Apply the coupon if available
+    if ($coupon_id) {
+        $subscription_data['coupon'] = $coupon_id;
+    }
+
+    // Create the Stripe subscription
     try {
-        error_log("Fetching available coupons...");
-        $coupons = \Stripe\Coupon::all(['limit' => 10]); // Limit the number of coupons fetched
-        if (count($coupons->data) > 0) {
-            // Use the first available coupon
-            $coupon_id = $coupons->data[0]->id;
-            $coupon_metadata = $coupons->data[0]->metadata;  // Store metadata of the first coupon
-            error_log("Using available coupon: " . $coupon_id);
-        }
-    } catch (Exception $e) {
-        error_log('Stripe Coupon Fetch Error: ' . $e->getMessage());
-    }
-}
+        $subscription = \Stripe\Subscription::create($subscription_data);
 
-// Now you can use the coupon_id and coupon_metadata
-// For example, you can include coupon metadata in the subscription data
-$subscription_data = [
-    'customer' => $customer->id,
-    'items' => [['price' => $price_id]], // Attach price
-    'metadata' => [
-        'coupon_metadata' => json_encode($coupon_metadata),  // Store coupon metadata in subscription metadata
-    ],
-];
-
-// Apply the coupon if available
-if ($coupon_id) {
-    $subscription_data['coupon'] = $coupon_id;
-}
-
-// Create the Stripe subscription
-try {
-    $subscription = \Stripe\Subscription::create($subscription_data);
-
-    // Store Stripe customer ID in the database
-    global $wpdb;
-    $wpdb->update(
-        "{$wpdb->prefix}parents",
-        ['stripe_customer_id' => $customer->id],
-        ['user_id' => $parent_id]
-    );
-
-    // Insert subscription data into memberships table
-    $wpdb->insert(
-        "{$wpdb->prefix}memberships",
-        [
-            'user_id' => $parent_id,
-            'membership_type' => $membership_type,
-            'stripe_subscription_id' => $subscription->id,
-            'status' => 'active',
-            'created_at' => current_time('mysql'),
-            'referral_code' => $referral_code
-        ]
-    );
-
-    // Send thank you email
-    $subject = 'Thank You for Registering!';
-    $message = "Hi {$full_name},\n\n";
-    $message .= "Thank you for registering and subscribing to our service. We are excited to have you on board!\n\n";
-    if ($referral_code) {
-        $message .= "You used the referral code: {$referral_code}. Your discount has been applied.\n\n";
-    }
-    $message .= "If you have any questions, feel free to contact us.\n\n";
-    $message .= "Thanks,\n";
-    $message .= "Santa Report Card Team";
-
-    $headers = ['Content-Type: text/html; charset=UTF-8', 'From: Santa Report Card <no-reply@santareportcard.com>'];
-    wp_mail($parent_email, $subject, $message, $headers);
-
-    // Redirect to Thank You page
-    wp_redirect(site_url('/thank-you'));
-    exit;
-} catch (\Stripe\Exception\ApiErrorException $e) {
-    // Handle Stripe subscription creation error
-    error_log('Stripe Subscription Creation Error: ' . $e->getMessage());
-    wp_die('There was an issue creating your subscription. Please try again later.');
-}
-}
-
-
-
-// Handle parent registration with Stripe
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST)) {
-    // Sanitize inputs from the registration form
-    $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
-    $password = isset($_POST['password']) ? sanitize_text_field($_POST['password']) : '';
-    $full_name = isset($_POST['full_name']) ? sanitize_text_field($_POST['full_name']) : '';
-    $referral_code = isset($_POST['referral_code']) ? sanitize_text_field($_POST['referral_code']) : '';
-    $membership_type = isset($_POST['membership_type']) ? sanitize_text_field($_POST['membership_type']) : '';
-    $payment_method_id = isset($_POST['payment_method_id']) ? sanitize_text_field($_POST['payment_method_id']) : '';
-
-    // Check if necessary fields are filled
-    if (!empty($email) && !empty($password) && !empty($full_name) && !empty($payment_method_id)) {
+        // Store Stripe customer ID in the database
         global $wpdb;
+        $wpdb->update(
+            "{$wpdb->prefix}parents",
+            ['stripe_customer_id' => $customer->id],
+            ['user_id' => $parent_id]
+        );
 
-        // Insert parent data into the database
-        $inserted = $wpdb->insert(
-            "{$wpdb->prefix}parents", // Table name
+        // Insert subscription data into memberships table
+        $wpdb->insert(
+            "{$wpdb->prefix}memberships",
             [
-                'email' => $email,
-                'password_hash' => wp_hash_password($password),
-                'full_name' => $full_name,
-                'referral_code' => $referral_code,
+                'user_id' => $parent_id,
                 'membership_type' => $membership_type,
-                'created_at' => current_time('mysql') // Store the registration date/time
+                'stripe_subscription_id' => $subscription->id,
+                'status' => 'active',
+                'created_at' => current_time('mysql'),
+                'referral_code' => $referral_code
             ]
         );
 
-        // If insertion was successful, proceed to create the Stripe customer and subscription
-        if ($inserted) {
-            $parent_id = $wpdb->insert_id; // Get the inserted parent ID
-
-            // Create Stripe customer and subscription
-            create_stripe_customer_and_subscription($parent_id, $email, $full_name, $membership_type, $payment_method_id, $referral_code);
-
-            // Redirect to the Thank You page
-            wp_redirect(site_url('/thank-you'));
-            exit;
+        // Send thank you email
+        $subject = 'Thank You for Registering!';
+        $message = "Hi {$full_name},\n\n";
+        $message .= "Thank you for registering and subscribing to our service. We are excited to have you on board!\n\n";
+        if ($referral_code) {
+            $message .= "You used the referral code: {$referral_code}. Your discount has been applied.\n\n";
         }
+        $message .= "If you have any questions, feel free to contact us.\n\n";
+        $message .= "Thanks,\n";
+        $message .= "Santa Report Card Team";
+
+        $headers = ['Content-Type: text/html; charset=UTF-8', 'From: Santa Report Card <no-reply@santareportcard.com>'];
+        wp_mail($parent_email, $subject, $message, $headers);
+
+        // Redirect to Thank You page
+        wp_redirect(site_url('/thank-you'));
+        exit;
+    } catch (\Stripe\Exception\ApiErrorException $e) {
+        // Handle Stripe subscription creation error
+        error_log('Stripe Subscription Creation Error: ' . $e->getMessage());
+        wp_die('There was an issue creating your subscription. Please try again later.');
     }
 }
+
+
 
 // Register REST API endpoint to fetch Stripe prices
 add_action('rest_api_init', function () {
@@ -501,7 +537,8 @@ add_action('rest_api_init', function () {
     ));
 });
 
-function get_stripe_prices() {
+function get_stripe_prices()
+{
     require_once 'includes/stripe-functions.php';
 
     \Stripe\Stripe::setApiKey('sk_test_51QqQq02Melw1opnFbHe4SAAbuvv8FCtySqEZGJBLZYVil8XpMFRnEK3cQA2IbnT30nqCLqP1K9iApRNl5YLd4CU400Dj8MKHhd'); // Replace with your secret key
@@ -522,7 +559,8 @@ add_action('rest_api_init', function () {
     ));
 });
 
-function get_stripe_promotion_codes() {
+function get_stripe_promotion_codes()
+{
     require_once 'includes/stripe-functions.php';
 
     \Stripe\Stripe::setApiKey('sk_test_51QqQq02Melw1opnFbHe4SAAbuvv8FCtySqEZGJBLZYVil8XpMFRnEK3cQA2IbnT30nqCLqP1K9iApRNl5YLd4CU400Dj8MKHhd'); // Replace with your secret key
@@ -650,25 +688,30 @@ function src_child_registration_form()
             max-width: 600px;
             margin: 0 auto;
         }
+
         .child-form h4 {
             text-align: center;
             margin-bottom: 20px;
         }
+
         .child-form .wp-block-columns {
             display: flex;
             flex-wrap: wrap;
             margin-bottom: 20px;
         }
+
         .child-form .wp-block-column {
             flex: 1;
             min-width: 200px;
             padding: 10px;
         }
+
         .child-form label {
             display: block;
             margin-bottom: 8px;
             font-weight: bold;
         }
+
         .child-form input,
         .child-form select {
             width: 100%;
@@ -677,18 +720,20 @@ function src_child_registration_form()
             border-radius: 5px;
             box-sizing: border-box;
         }
+
         .child-form button {
             width: 100%;
             padding: 10px;
-            background:rgb(229, 15, 4);
+            background: rgb(229, 15, 4);
             color: #fff;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
         }
+
         .child-form button:hover {
-            background:rgb(224, 10, 10);
+            background: rgb(224, 10, 10);
         }
     </style>
     <form id="child-registration-form" method="POST" class="wp-block-group child-form">
@@ -733,7 +778,8 @@ function get_child_grading_criteria($kid_id)
     return $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}grading_criteria WHERE kid_id = %d", $kid_id));
 }
 
-function handle_report_card_submission() {
+function handle_report_card_submission()
+{
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['kid_id'])) {
         global $wpdb;
 
@@ -783,7 +829,8 @@ add_action('init', 'handle_report_card_submission');
 
 
 // Generate Report Card Form Shortcode
-function generate_report_card_form() {
+function generate_report_card_form()
+{
     if (!isset($_SESSION['parent_email'])) {
         return '<p>You must be logged in to create a report card.</p>';
     }
@@ -828,7 +875,7 @@ function generate_report_card_form() {
                         let criteriaDiv = document.getElementById('grading-criteria');
                         criteriaDiv.innerHTML = '';
                         for (let i = 1; i <= 5; i++) {
-                            criteriaDiv.innerHTML += 
+                            criteriaDiv.innerHTML +=
                                 `<label>${data['criteria_' + i]}</label>
                                 <select name="criteria_${i}" required>
                                     <option value="green" style="background-color: #008000; color: white;">Green</option>
@@ -842,7 +889,7 @@ function generate_report_card_form() {
             }
         }
     </script>
-    <?php return ob_get_clean();
+<?php return ob_get_clean();
 }
 add_shortcode('generate_report_card_form', 'generate_report_card_form');
 
@@ -896,7 +943,7 @@ function display_report_cards()
         foreach ($report_cards as $report) {
             $report_date = !empty($report->report_date) ? esc_html($report->report_date) : 'N/A';
 
-     echo "<tr>
+            echo "<tr>
                 <td>{$report_date}</td>
                 <td><a href='" . esc_url(get_permalink(get_page_by_path('report-card-view')) . "?report_id={$report->report_id}") . "' target='_blank' class='button'>View & Print</a></td>
                 <td>
@@ -935,7 +982,8 @@ add_action('init', 'handle_report_card_deletion');
 
 // Display Report Card Data
 
-function inject_report_card_data() {
+function inject_report_card_data()
+{
     if (!is_page('report-card-view') || !isset($_GET['report_id'])) {
         return;
     }
@@ -952,15 +1000,15 @@ function inject_report_card_data() {
     }
 
 
-        // Try to fetch the previous month's report first
-        $previous_month_date = date('Y-m-d', strtotime('-0 month', strtotime($current_report->report_date)));
+    // Try to fetch the previous month's report first
+    $previous_month_date = date('Y-m-d', strtotime('-0 month', strtotime($current_report->report_date)));
+    $previous_report = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}report_cards WHERE kid_id = %d AND report_date = %s", $current_report->kid_id, $previous_month_date));
+
+    // If no report is found for the same month, check for one month prior
+    if (!$previous_report) {
+        $previous_month_date = date('Y-m-d', strtotime('-1 month', strtotime($current_report->report_date)));
         $previous_report = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}report_cards WHERE kid_id = %d AND report_date = %s", $current_report->kid_id, $previous_month_date));
-    
-        // If no report is found for the same month, check for one month prior
-        if (!$previous_report) {
-            $previous_month_date = date('Y-m-d', strtotime('-1 month', strtotime($current_report->report_date)));
-            $previous_report = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}report_cards WHERE kid_id = %d AND report_date = %s", $current_report->kid_id, $previous_month_date));
-        }
+    }
 
     // Fetch the child and grading criteria data
     $kid = $wpdb->get_row($wpdb->prepare("SELECT full_name FROM {$wpdb->prefix}kids WHERE kid_id = %d", $current_report->kid_id));
@@ -991,8 +1039,9 @@ add_action('wp_footer', 'inject_report_card_data');
 
 
 
-    function build_report_table($current_report, $previous_report, $criteria, $grade_values, $grade_colors) {
-        $table_html = "<table style='width: 100%; border-collapse: collapse; text-align: center;'>
+function build_report_table($current_report, $previous_report, $criteria, $grade_values, $grade_colors)
+{
+    $table_html = "<table style='width: 100%; border-collapse: collapse; text-align: center;'>
             <thead>
                 <tr style='background-color: #f4f4f4;'>
                     <th style='padding: 10px; border: 1px solid #ddd;'>Criteria</th>
@@ -1003,92 +1052,92 @@ add_action('wp_footer', 'inject_report_card_data');
                 </tr>
             </thead>
             <tbody>";
-    
-        $current_total = $previous_total = $overall_total = 0;
-        $current_count = $previous_count = $overall_count = 0;
-    
-        for ($i = 1; $i <= 5; $i++) {
-            $criteria_name = isset($criteria->{"criteria_$i"}) ? esc_html($criteria->{"criteria_$i"}) : "Unnamed Criteria";
-    
-            // Get current and previous grades
-            $current_grade = strtolower(trim(esc_html($current_report->{"grade_$i"})));
-            $previous_grade = $previous_report ? strtolower(trim(esc_html($previous_report->{"grade_$i"}))) : "N/A";
-    
-            // Convert grades to numeric values
-            $current_value = $grade_values[$current_grade] ?? null;
-            $previous_value = isset($grade_values[$previous_grade]) ? $grade_values[$previous_grade] : null;
-    
-            // Calculate average if both are available
-            if ($current_value !== null && $previous_value !== null) {
-                $average_value = round(($current_value + $previous_value) / 2);
-            } elseif ($current_value !== null) {
-                $average_value = $current_value;
-            } elseif ($previous_value !== null) {
-                $average_value = $previous_value;
-            } else {
-                $average_value = null;
-            }
-    
-            // Convert numeric average back to a grade
-            $average_grade = array_search($average_value, $grade_values) ?? "N/A";
-    
-            // Get colors for each grade
-            $current_color = $grade_colors[$current_grade] ?? "#A9A9A9";
-            $previous_color = $grade_colors[$previous_grade] ?? "#A9A9A9";
-            $average_color = $grade_colors[$average_grade] ?? "#A9A9A9";
-    
-            // Accumulate totals for averages
-            if ($current_value !== null) {
-                $current_total += $current_value;
-                $current_count++;
-            }
-            if ($previous_value !== null) {
-                $previous_total += $previous_value;
-                $previous_count++;
-            }
-            if ($average_value !== null) {
-                $overall_total += $average_value;
-                $overall_count++;
-            }
-    
-            // Get comments for the current criterion
-            $current_comment = esc_html($current_report->{"comment_$i"});
-    
-            $table_html .= "<tr>
+
+    $current_total = $previous_total = $overall_total = 0;
+    $current_count = $previous_count = $overall_count = 0;
+
+    for ($i = 1; $i <= 5; $i++) {
+        $criteria_name = isset($criteria->{"criteria_$i"}) ? esc_html($criteria->{"criteria_$i"}) : "Unnamed Criteria";
+
+        // Get current and previous grades
+        $current_grade = strtolower(trim(esc_html($current_report->{"grade_$i"})));
+        $previous_grade = $previous_report ? strtolower(trim(esc_html($previous_report->{"grade_$i"}))) : "N/A";
+
+        // Convert grades to numeric values
+        $current_value = $grade_values[$current_grade] ?? null;
+        $previous_value = isset($grade_values[$previous_grade]) ? $grade_values[$previous_grade] : null;
+
+        // Calculate average if both are available
+        if ($current_value !== null && $previous_value !== null) {
+            $average_value = round(($current_value + $previous_value) / 2);
+        } elseif ($current_value !== null) {
+            $average_value = $current_value;
+        } elseif ($previous_value !== null) {
+            $average_value = $previous_value;
+        } else {
+            $average_value = null;
+        }
+
+        // Convert numeric average back to a grade
+        $average_grade = array_search($average_value, $grade_values) ?? "N/A";
+
+        // Get colors for each grade
+        $current_color = $grade_colors[$current_grade] ?? "#A9A9A9";
+        $previous_color = $grade_colors[$previous_grade] ?? "#A9A9A9";
+        $average_color = $grade_colors[$average_grade] ?? "#A9A9A9";
+
+        // Accumulate totals for averages
+        if ($current_value !== null) {
+            $current_total += $current_value;
+            $current_count++;
+        }
+        if ($previous_value !== null) {
+            $previous_total += $previous_value;
+            $previous_count++;
+        }
+        if ($average_value !== null) {
+            $overall_total += $average_value;
+            $overall_count++;
+        }
+
+        // Get comments for the current criterion
+        $current_comment = esc_html($current_report->{"comment_$i"});
+
+        $table_html .= "<tr>
                 <td style='padding: 10px; border: 1px solid #ddd;'>$criteria_name</td>
-                <td style='padding: 10px; border: 1px solid #ddd; background-color: $current_color; color: white; font-weight: bold;'>". strtoupper($current_grade) ."</td>
-                <td style='padding: 10px; border: 1px solid #ddd; background-color: $previous_color; color: white; font-weight: bold;'>". strtoupper($previous_grade) ."</td>
-                <td style='padding: 10px; border: 1px solid #ddd; background-color: $average_color; color: white; font-weight: bold;'>". strtoupper($average_grade) ."</td>
+                <td style='padding: 10px; border: 1px solid #ddd; background-color: $current_color; color: white; font-weight: bold;'>" . strtoupper($current_grade) . "</td>
+                <td style='padding: 10px; border: 1px solid #ddd; background-color: $previous_color; color: white; font-weight: bold;'>" . strtoupper($previous_grade) . "</td>
+                <td style='padding: 10px; border: 1px solid #ddd; background-color: $average_color; color: white; font-weight: bold;'>" . strtoupper($average_grade) . "</td>
                 <td class='current-comment' style='padding: 10px; border: 1px solid #ddd;'>$current_comment</td>
             </tr>";
-        }
-    
-        // Calculate overall averages
-        $final_current_value = $current_count > 0 ? round($current_total / $current_count) : null;
-        $final_previous_value = $previous_count > 0 ? round($previous_total / $previous_count) : null;
-        $final_overall_value = $overall_count > 0 ? round($overall_total / $overall_count) : null;
-    
-        // Convert back to grades
-        $final_current_grade = array_search($final_current_value, $grade_values) ?? "N/A";
-        $final_previous_grade = array_search($final_previous_value, $grade_values) ?? "N/A";
-        $final_overall_grade = array_search($final_overall_value, $grade_values) ?? "N/A";
-    
-        // Get colors for final averages
-        $final_current_color = $grade_colors[$final_current_grade] ?? "#A9A9A9";
-        $final_previous_color = $grade_colors[$final_previous_grade] ?? "#A9A9A9";
-        $final_overall_color = $grade_colors[$final_overall_grade] ?? "#A9A9A9";
-    
-        // Append the totals row
-        $table_html .= "<tr style='font-weight: bold; background-color: #f4f4f4;'>
+    }
+
+    // Calculate overall averages
+    $final_current_value = $current_count > 0 ? round($current_total / $current_count) : null;
+    $final_previous_value = $previous_count > 0 ? round($previous_total / $previous_count) : null;
+    $final_overall_value = $overall_count > 0 ? round($overall_total / $overall_count) : null;
+
+    // Convert back to grades
+    $final_current_grade = array_search($final_current_value, $grade_values) ?? "N/A";
+    $final_previous_grade = array_search($final_previous_value, $grade_values) ?? "N/A";
+    $final_overall_grade = array_search($final_overall_value, $grade_values) ?? "N/A";
+
+    // Get colors for final averages
+    $final_current_color = $grade_colors[$final_current_grade] ?? "#A9A9A9";
+    $final_previous_color = $grade_colors[$final_previous_grade] ?? "#A9A9A9";
+    $final_overall_color = $grade_colors[$final_overall_grade] ?? "#A9A9A9";
+
+    // Append the totals row
+    $table_html .= "<tr style='font-weight: bold; background-color: #f4f4f4;'>
             <td style='padding: 10px; border: 1px solid #ddd;'>Average</td>
-            <td style='padding: 10px; border: 1px solid #ddd; background-color: $final_current_color; color: white;'>". strtoupper($final_current_grade) ."</td>
-            <td style='padding: 10px; border: 1px solid #ddd; background-color: $final_previous_color; color: white;'>". strtoupper($final_previous_grade) ."</td>
-            <td style='padding: 10px; border: 1px solid #ddd; background-color: $final_overall_color; color: white;'>". strtoupper($final_overall_grade) ."</td>
+            <td style='padding: 10px; border: 1px solid #ddd; background-color: $final_current_color; color: white;'>" . strtoupper($final_current_grade) . "</td>
+            <td style='padding: 10px; border: 1px solid #ddd; background-color: $final_previous_color; color: white;'>" . strtoupper($final_previous_grade) . "</td>
+            <td style='padding: 10px; border: 1px solid #ddd; background-color: $final_overall_color; color: white;'>" . strtoupper($final_overall_grade) . "</td>
             <td style='padding: 10px; border: 1px solid #ddd;'></td>
         </tr>";
-    
-        $table_html .= "</tbody></table>";
-        return $table_html;
+
+    $table_html .= "</tbody></table>";
+    return $table_html;
     // Generate the table HTML
     $report_table_html = build_report_table($current_report, $previous_report, $criteria, $grade_values, $grade_colors);
 
@@ -1181,7 +1230,7 @@ function src_dashboard_navigation()
     <nav class="dashboard-navigation">
         <ul>
             <li><a href="/">🏠 Home</a></li>
-            <li><a href="/childregister">👥 Register Child</a></li>         
+            <li><a href="/childregister">👥 Register Child</a></li>
             <li><a href="<?php echo esc_url($logout_url); ?>">🚪 Logout</a></li>
         </ul>
     </nav>
@@ -1241,9 +1290,10 @@ add_shortcode('src_registered_parents', 'src_get_registered_parents');
 // Shortcode to display the forgot password form
 // Shortcode to display the forgot password form
 // Shortcode to display the forgot password form
-function forgot_password_form() {
+function forgot_password_form()
+{
     ob_start();
-    ?>
+?>
     <div class="forgot-password-container">
         <form class="forgot-password-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
             <input type="hidden" name="action" value="forgot_password">
@@ -1252,26 +1302,29 @@ function forgot_password_form() {
             <button type="submit">Reset Password</button>
         </form>
     </div>
-    <?php
+<?php
     return ob_get_clean();
 }
 add_shortcode('forgot_password_form', 'forgot_password_form');
 
 // Shortcode to display the password reset form
-function password_reset_form() {
+function password_reset_form()
+{
     if (!isset($_GET['key']) || !isset($_GET['login'])) {
         return '<p>Invalid password reset link.</p>';
     }
 
     ob_start();
-    ?>
-<style>
+?>
+    <style>
         .password-reset-container {
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh; /* Full viewport height */
-            background-color: #f9f9f9; /* Light background color */
+            height: 100vh;
+            /* Full viewport height */
+            background-color: #f9f9f9;
+            /* Light background color */
         }
 
         .password-reset-form {
@@ -1300,8 +1353,10 @@ function password_reset_form() {
         .password-reset-form button {
             width: 100%;
             padding: 10px;
-            background: #e50f04; /* Red background color */
-            color: #fff; /* White text color */
+            background: #e50f04;
+            /* Red background color */
+            color: #fff;
+            /* White text color */
             border: none;
             border-radius: 5px;
             cursor: pointer;
@@ -1309,7 +1364,8 @@ function password_reset_form() {
         }
 
         .password-reset-form button:hover {
-            background: #d10a0a; /* Darker red on hover */
+            background: #d10a0a;
+            /* Darker red on hover */
         }
     </style>
     <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
@@ -1320,13 +1376,14 @@ function password_reset_form() {
         <input type="password" name="new_password" id="new_password" required>
         <button type="submit">Reset Password</button>
     </form>
-    <?php
+<?php
     return ob_get_clean();
 }
 add_shortcode('password_reset_form', 'password_reset_form');
 
 // Handle the forgot password request
-function handle_forgot_password() {
+function handle_forgot_password()
+{
     if (isset($_POST['user_login'])) {
         global $wpdb;
         $user_login = sanitize_email($_POST['user_login']);
@@ -1378,7 +1435,8 @@ add_action('admin_post_nopriv_forgot_password', 'handle_forgot_password');
 add_action('admin_post_forgot_password', 'handle_forgot_password');
 
 // Handle the password reset request
-function handle_password_reset() {
+function handle_password_reset()
+{
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['key']) && isset($_POST['login']) && isset($_POST['new_password'])) {
         global $wpdb;
         $key = sanitize_text_field($_POST['key']);
@@ -1407,7 +1465,8 @@ function handle_password_reset() {
 }
 
 // Handle the contact form submission
-function handle_contact_form_submission() {
+function handle_contact_form_submission()
+{
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'submit_contact_form') {
         $first_name = sanitize_text_field($_POST['first-name']);
         $last_name = sanitize_text_field($_POST['last-name']);
@@ -1440,6 +1499,126 @@ function handle_contact_form_submission() {
         }
     }
 }
+
+
+// Add function to get Stripe price
+// Update the get_stripe_price function to use the same logic
+function get_stripe_price()
+{
+    try {
+        require_once get_stylesheet_directory() . '/includes/stripe-functions.php';
+        \Stripe\Stripe::setApiKey('sk_test_51QqQq02Melw1opnFbHe4SAAbuvv8FCtySqEZGJBLZYVil8XpMFRnEK3cQA2IbnT30nqCLqP1K9iApRNl5YLd4CU400Dj8MKHhd');
+
+        // First, get the product ID for 'basic'
+        $products = \Stripe\Product::search([
+            'query' => 'active:\'true\' AND name:\'basic\'',
+        ]);
+
+        if (empty($products->data)) {
+            error_log('Stripe Error: No basic product found');
+            return '59.99';
+        }
+
+        // Get the first active price for this product
+        $prices = \Stripe\Price::all([
+            'active' => true,
+            'product' => $products->data[0]->id,
+            'limit' => 1
+        ]);
+
+        if (empty($prices->data)) {
+            error_log('Stripe Error: No active price found for basic product');
+            return '59.99';
+        }
+
+        return number_format($prices->data[0]->unit_amount / 100, 2);
+    } catch (Exception $e) {
+        error_log('Stripe Price Error: ' . $e->getMessage());
+        return '59.99';
+    }
+}
+
+// Update check_referral_discount function
+function check_referral_discount()
+{
+    if (!isset($_POST['referral_code'])) {
+        wp_send_json_error(['message' => 'No referral code provided.']);
+        return;
+    }
+
+    $referral_code = sanitize_text_field($_POST['referral_code']);
+    $original_price = floatval(get_stripe_price()); // Get price from Stripe
+
+    try {
+        require_once get_stylesheet_directory() . '/includes/stripe-functions.php';
+        \Stripe\Stripe::setApiKey('sk_test_51QqQq02Melw1opnFbHe4SAAbuvv8FCtySqEZGJBLZYVil8XpMFRnEK3cQA2IbnT30nqCLqP1K9iApRNl5YLd4CU400Dj8MKHhd');
+
+        // Try to retrieve the promotion code
+        $promotions = \Stripe\PromotionCode::all([
+            'code' => $referral_code,
+            'active' => true,
+            'limit' => 1
+        ]);
+
+        if (empty($promotions->data)) {
+            wp_send_json_error(['message' => 'Invalid referral code']);
+            return;
+        }
+
+        $promotion = $promotions->data[0];
+        $coupon = $promotion->coupon;
+
+        if (!$coupon->valid) {
+            wp_send_json_error(['message' => 'Expired referral code']);
+            return;
+        }
+
+        // Calculate new price
+        $discount = ($coupon->percent_off)
+            ? ($original_price * ($coupon->percent_off / 100))
+            : ($coupon->amount_off / 100);
+        $new_price = max(0, $original_price - $discount);
+
+        wp_send_json_success([
+            'new_price' => number_format($new_price, 2),
+            'discount_type' => $coupon->percent_off ? 'percent' : 'amount',
+            'discount_value' => $coupon->percent_off ?? ($coupon->amount_off / 100)
+        ]);
+    } catch (Exception $e) {
+        wp_send_json_error([
+            'message' => 'Error processing referral code',
+            'error' => $e->getMessage()
+        ]);
+    }
+}
+
+// Add AJAX actions
+add_action('wp_ajax_check_referral_discount', 'check_referral_discount');
+add_action('wp_ajax_nopriv_check_referral_discount', 'check_referral_discount');
+
+function get_initial_stripe_price()
+{
+    try {
+        $price = get_stripe_price();
+        wp_send_json_success([
+            'price' => $price
+        ]);
+    } catch (Exception $e) {
+        error_log('Stripe Price Error: ' . $e->getMessage());
+        wp_send_json_error([
+            'price' => '59.99',
+            'error' => $e->getMessage()
+        ]);
+    }
+}
+// Register the AJAX endpoints
+add_action('wp_ajax_get_stripe_price', 'get_initial_stripe_price');
+add_action('wp_ajax_nopriv_get_stripe_price', 'get_initial_stripe_price');
+
+
+
+
+
 add_action('init', 'handle_contact_form_submission');
 add_action('admin_post_nopriv_reset_password', 'handle_password_reset');
 add_action('admin_post_reset_password', 'handle_password_reset');

@@ -1,2 +1,199 @@
-<!-- wp:template-part {"slug":"header","theme":"twentytwentyfive","tagName":"header"} /-->
+<p><!-- 
+ Check if user is logged in
+ if (!isset($_SESSION['user_id'])) {
+    wp_redirect(home_url('/login'));
+    exit; --></p>
+<style>
+    * {<br />
+        margin: 0;<br />
+        padding: 0;<br />
+        box-sizing: border-box;<br />
+    }</p>
+<p>    body {<br />
+        font-family: Arial, sans-serif;<br />
+        background-color: #f1f5f9;<br />
+        color: #333;<br />
+    }</p>
+<p>    .dashboard {<br />
+        display: flex;<br />
+        min-height: 100vh;<br />
+    }</p>
+<p>    .sidebar {<br />
+        width: 250px;<br />
+        background-color: #ffffff;<br />
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);<br />
+        padding: 20px;<br />
+    }</p>
+<p>    .sidebar h2 {<br />
+        font-size: 24px;<br />
+        margin-bottom: 30px;<br />
+        color: #1e293b;<br />
+    }</p>
+<p>    .sidebar nav a {<br />
+        display: flex;<br />
+        align-items: center;<br />
+        padding: 10px 15px;<br />
+        color: #64748b;<br />
+        text-decoration: none;<br />
+        transition: background-color 0.3s;<br />
+        border-radius: 5px;<br />
+        margin-bottom: 5px;<br />
+    }</p>
+<p>    .sidebar nav a:hover,<br />
+    .sidebar nav a.active {<br />
+        background-color: #f1f5f9;<br />
+        color: #1e293b;<br />
+    }</p>
+<p>    .sidebar nav a i {<br />
+        margin-right: 10px;<br />
+        font-size: 18px;<br />
+    }</p>
+<p>    .main-content {<br />
+        flex: 1;<br />
+        padding: 20px;<br />
+    }</p>
+<p>    header {<br />
+        display: flex;<br />
+        justify-content: space-between;<br />
+        align-items: center;<br />
+        padding: 20px;<br />
+        background-color: #ffffff;<br />
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);<br />
+        margin-bottom: 20px;<br />
+    }</p>
+<p>    header h1 {<br />
+        font-size: 24px;<br />
+        color: #1e293b;<br />
+    }</p>
+<p>    .notification-icon {<br />
+        font-size: 20px;<br />
+        color: #64748b;<br />
+        cursor: pointer;<br />
+    }</p>
+<p>    .card {<br />
+        background-color: #ffffff;<br />
+        border-radius: 8px;<br />
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);<br />
+        padding: 20px;<br />
+        margin-bottom: 20px;<br />
+    }</p>
+<p>    .card h2 {<br />
+        font-size: 20px;<br />
+        margin-bottom: 15px;<br />
+        color: #1e293b;<br />
+    }</p>
+<p>    .overview-grid {<br />
+        display: grid;<br />
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));<br />
+        gap: 20px;<br />
+    }</p>
+<p>    .overview-item {<br />
+        padding: 15px;<br />
+        border-radius: 8px;<br />
+        text-align: center;<br />
+    }</p>
+<p>    .overview-item.blue {<br />
+        background-color: #e0f2fe;<br />
+    }</p>
+<p>    .overview-item.green {<br />
+        background-color: #dcfce7;<br />
+    }</p>
+<p>    .overview-item p:first-child {<br />
+        font-size: 14px;<br />
+        color: #0369a1;<br />
+        margin-bottom: 5px;<br />
+    }</p>
+<p>    .overview-item p:last-child {<br />
+        font-size: 24px;<br />
+        font-weight: bold;<br />
+        color: #0c4a6e;<br />
+    }</p>
+<p>    .button {<br />
+        display: inline-block;<br />
+        background-color: #3b82f6;<br />
+        color: #ffffff;<br />
+        padding: 10px 15px;<br />
+        border-radius: 5px;<br />
+        text-decoration: none;<br />
+        transition: background-color 0.3s;<br />
+    }</p>
+<p>    .button:hover {<br />
+        background-color: #2563eb;<br />
+    }</p>
+<p>    .button.outline {<br />
+        background-color: transparent;<br />
+        border: 1px solid #3b82f6;<br />
+        color: #3b82f6;<br />
+    }</p>
+<p>    .button.outline:hover {<br />
+        background-color: #3b82f6;<br />
+        color: #ffffff;<br />
+    }</p>
+<p>    select {<br />
+        width: 100%;<br />
+        max-width: 200px;<br />
+        padding: 10px;<br />
+        border: 1px solid #d1d5db;<br />
+        border-radius: 5px;<br />
+        margin-bottom: 15px;<br />
+    }</p>
+<p>    .report-card-display {<br />
+        background-color: #f1f5f9;<br />
+        border-radius: 5px;<br />
+        padding: 15px;<br />
+        margin-bottom: 15px;<br />
+    }</p>
+<p>    .button-group {<br />
+        display: flex;<br />
+        gap: 10px;<br />
+    }<br />
+</style>
+<p></head></p>
 
+<!-- wp:group {"align":"full","className":"dashboard"} -->
+<div class="wp-block-group alignfull dashboard"><!-- wp:shortcode -->
+[dashboard_nav]
+<!-- /wp:shortcode -->
+
+<!-- wp:group {"className":"main-content"} -->
+<div class="wp-block-group main-content"><!-- wp:group {"className":"header"} -->
+<div class="wp-block-group header"><!-- wp:heading {"level":1} -->
+<h1 class="wp-block-heading">Dashboard</h1>
+<!-- /wp:heading --></div>
+<!-- /wp:group -->
+
+<!-- wp:group {"className":"card"} -->
+<div class="wp-block-group card"><!-- wp:heading -->
+<h2 class="wp-block-heading">Overview</h2>
+<!-- /wp:heading -->
+
+<!-- wp:shortcode -->
+[dashboard_overview]
+<!-- /wp:shortcode --></div>
+<!-- /wp:group -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">Manage Children</h2>
+<!-- /wp:heading -->
+
+<!-- wp:group {"className":"card"} -->
+<div class="wp-block-group card"><!-- wp:heading -->
+<h2 class="wp-block-heading">Report Cards</h2>
+<!-- /wp:heading -->
+
+<!-- wp:shortcode -->
+[display_report_cards]
+<!-- /wp:shortcode -->
+
+<!-- wp:group {"className":"report-card-display"} -->
+<div class="wp-block-group report-card-display"></div>
+<!-- /wp:group -->
+
+<!-- wp:buttons {"className":"button-group"} -->
+<div class="wp-block-buttons button-group"><!-- wp:button -->
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button"></a></div>
+<!-- /wp:button --></div>
+<!-- /wp:buttons --></div>
+<!-- /wp:group --></div>
+<!-- /wp:group --></div>
+<!-- /wp:group -->
